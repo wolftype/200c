@@ -1,0 +1,229 @@
+---
+category: math
+tag: matrices
+---
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]},
+  TeX: { extensions: ["AMSmath.js"] }
+});
+</script>
+<script type="text/javascript" async
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML"></script>
+
+<script type="text/javascript" src = "../js/gfx.js"></script>
+
+
+##Matrices for 3D Graphics
+
+A matrix is a grid of numbers that can be added to and multiplied by another matrix. Advanced OpenGL use is aided by a solid understanding of them, as they are what we use to transform our 3D coordinates and project them onto a 2D screen. 
+
+###Row-major vs Column-major order
+
+First, let's get one thing out of the way -- or rather lets put one thing in the way!  Some coders (such as myself) like to use **row-major** order to make the data in their matrices easier to read in code form.  For a matrix representation to be row-major means that the following code:
+
+	mat4 m(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16);
+
+creates a matrix by filling the rows first:
+
+$$\begin{bmatrix} 1&2&3&4 \\\ 5&6&7&8 \\\ 9&10&11&12 \\\ 13&14&15&16	\end{bmatrix}$$
+
+Using this convention helps when creating matrices since the layout of the code matches the representation:
+
+	mat4 m( 1,  2,  3,  4
+		    5,  6,  7,  8
+		    9,  10, 11, 12
+		    13, 14, 15, 16 );
+
+This is all well and good, however OpenGL and GLSL (Graphics Library Shader Language) specifies its matrices in **column-major** order. So in a GLSL shader the same code:
+
+	mat4 m(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16)
+
+creates a matrix by filling the columns first:
+
+$$\begin{bmatrix} 1&5&9&13 \\\ 2&6&10&14 \\\ 3&7&11&15 \\\4&8&12&16	\end{bmatrix}$$
+
+Many graphics mathematics libraries such as `three.js` and `glm` (and MAT's own `allosystem`) use column major order in the code to avoid needing to **transpose** their matrices when copying matrices over to the gpu.  Transposition turns rows into columns
+
+$$\begin{bmatrix} 1&2&3&4 \\\ 5&6&7&8 \\\ 9&10&11&12 \\\ 13&14&15&16	\end{bmatrix}^T = \begin{bmatrix} 1&5&9&13 \\\ 2&6&10&14 \\\ 3&7&11&15 \\\4&8&12&16	\end{bmatrix}$$
+
+The code that accompanies this course we be strictly row-order and so we will transpose our matrices when sending them over to the gpu.  This is just my own **design decision**.  In this case the clarity of using row-major representations outweigh the cost of transposition.  You will make your own decision in your code, just don't forget which one you choose!  Also, when looking at other libraries, make sure you can identify which order they encode their matrices.
+
+###Transformations
+
+Let's say we have built a mesh that is composed of a bunch of vectors $\mathbf{v}$ in 3D space.
+We say these vectors are in **local space**.
+
+In order for the mesh to be presented on your 2D screen, each of these 3D vectors must undergo a transformation $f$ that turns them into **screen space**.  Modern day graphics cards are designed to optimize these transformations. 
+
+$$f: \mathbf{v_{local}} \mapsto \mathbf{v_{screen}} $$
+
+The transformation function $f$ is **composed** of a series of **matrix multiplications** acting on a **homegenized** vector, followed by a **viewport transform**:
+
+$$f(\mathbf{v_{local}})= T_{viewport}[A_{projection} * A_{view} * A_{model} * h(\mathbf{v_{local}})]$$
+
+where $h: \\{x,y,z\\} \mapsto \\{x,y,z,1\\}$ is a function that adds a fourth component $w=1$ to the 3D vector.  The viewport transform is handled by the graphics card, so all we need to worry about are those three $A$ matrices.
+
+Each $A$ variable in the equation above is a 4x4 matrix.  When these are multiplied together we get what is called the **Model-View-Projection** matrix. 
+
+$$A_{modelViewProjection}=A_{projection}*A_{view} * A_{model}$$
+
+Let's take a closer look at each of the components of the model-view-projection matrix. 
+
+* The **model matrix** converts vectors in **local space** to vectors in **object space**
+* The **view matrix** converts vectors in **object space** to vectors in **eye space**
+* The **projection matrix** converts vectors in **eye space** to vectors in **clip space**
+
+(Finally, the **viewport transform**, handled automatically by OpenGL, converts the vectors in **clip space** to vectors in **screen space**.)
+
+###Composing Transformation Sequences
+
+One thing you may immediately notice is that our matrices are multiplied together in the opposite order in which they transform the input vector.  A matrix that first transforms $\mathbf{v}$ by $A_1$ and then transforms that result by $A_2$ is encoded as $A_2*A_1$. It may be helpful to think of the equation itself as a box that processes an input vector on the far right and spits out an output on the left.  
+
+$$\mbox{Output} \leftarrow \mbox{Second Transformation} \leftarrow \mbox{First Transformation} \leftarrow \mbox{Input}$$
+
+By the way, we call this multiplying together of matrices into a single matrix **concatenation**. Remember, when **concatenating** transformations, the first operation we want to apply is the last one to be multiplied.
+
+
+###Model Matrix
+
+Given a set of vectors in local space, the model matrix is used to transform those vectors into object space, typically by **scaling**,  **rotating** and  **translating** them -- __in that order__!
+
+$$\mbox{Output} \leftarrow \mbox{Translate} \leftarrow \mbox{Rotate} \leftarrow \mbox{Scale} \leftarrow \mbox{Input}$$
+
+This scaling, rotating, and translating is encoded by the model matrix:
+
+$$A_{model}= A_{translate} * A_{rotate} * A_{scale}$$
+
+
+
+####Scaling
+
+The scaling matrix simply multiplies each ${x,y,z}$ component of the input vector by ${sx,sy,sz}$ respectively:
+
+$$A_{scaling} = \begin{bmatrix}	
+			  sx & 0    & 0   & 0 \\\
+			  0	    & sy & 0    & 0 \\\
+			  0     & 0    & sz & 0 \\\
+			  0		    & 0		   & 0        & 1 
+\end{bmatrix}$$
+
+####Rotation
+
+Rotating is a bit more complicated, but easy if we use quaternions (which we will).  For a quaternion $\mathbb{H}$ with values $\\{w,x,y,z\\}$ the corresponding rotation matrix is:
+
+$$A = \begin{bmatrix}	
+			  1-(y^2+z^2) & xy+wz    & xz-wy    & 0 \\\
+			  xy-wz	    & 1-(x^2+z^2)& yz+wx    & 0 \\\
+			  xz+wy     & yz-wx    & 1-(x^2+y^2)& 0 \\\
+			  0		    & 0		   & 0        & 1 
+\end{bmatrix}$$
+
+
+####Translation
+
+The translation matrix outputs a new vector that has been translated by $(tx,ty,tz)$.:
+
+$$A_{translation} = \begin{bmatrix}	
+			  1 & 0    & 0   & tx \\\
+			  0	    & 1 & 0    & ty \\\
+			  0     & 0    & 1 & tz \\\
+			  0		    & 0		   & 0        & 1 
+\end{bmatrix}$$
+
+
+
+
+###View
+The view matrix takes the object coordinates of the model and converts into eye space coordinates relative to the virtual camera.
+For stereoscopic rendering, this happens once for each eye.
+
+The view matrix is typically made by identifying three vectors:
+
+* $E$: The **eye** position vector.
+* $T$: The **target** coordinate at which to look.
+* $U$: The **up** vector specifying which way is up.
+
+###Projection
+
+First, a definition.  A **frustum** is a pyramid formed by drawing lines from the camera position to the four corners of the image plane.  To represent one we need to know the distance of the image plane from the camera, and the distance of each edge (left, right, top, bottom) from the center.  In symmetric frustums, the left offset is equal to the right offset, and the top offset is equal to the bottom offset.  This simplifies the matrix construction.  However when creating stereoscopic content we will need asymmetric frustums, and so the full frustum matrix remains valuable.
+
+We will make a matrix that takes a **frustum** and returns **clip space** coordinates that the gpu then uses internally to calculate the final **screen space**.
+
+For details on the rational behind the math for constructing a matrix representation from the frustrum see [songho's](http://www.songho.ca/opengl/gl_projectionmatrix.html) site.
+
+
+
+
+$$A_{projection} = 
+\begin{bmatrix}
+		\frac{2 \cdot near}{right-left} & 	0 &			  -\frac{right+left}{right-left} & 0 \\\
+		0 &				\frac{2 \cdot near}{top-bottom} &  -\frac{top+bottom}{top-bottom} & 0 \\\
+		0 &  			0 &	  		  -\frac{far+near}{far-near} &	-\frac{2 \cdot far \cdot near}{far-near} \\\
+		0 &				0 &			  -1 & 0 
+\end{bmatrix}$$
+
+Typical mono (non-stereo) single context (non-tiled) perspective matrices can be made with a symmetric frustum, where the $left=-right$ and $bottom=-top$.  This simplifies the above formula to:
+
+$$A_{projection} = 
+\begin{bmatrix}
+		\frac{near}{right} & 	0 &			  0 & 0 \\\
+		0 &				\frac{near}{top} &  0 & 0 \\\
+		0 &  			0 &	  		  -\frac{far+near}{far-near} &	-\frac{2 \cdot far \cdot near}{far-near} \\\
+		0 &				0 &			  -1 & 0 
+\end{bmatrix}$$
+
+Typically in such situations we do not specify edges of our frame, but rather feed in a **field-of-view** (FOV), which specifies the angles in degrees of our lens.  This angle can refer to vertical FOVY (from the top of the frame to the bottom) or horizontal FOVX (from the left of the frame to the right).  If we have a vertical FOVY converted to radians $\theta$ and an aspect ratio (the width of the screen divided by the height of the screen) we can calculate the missing parameters that we want to feed to the symmetric projection matrix.  We note that the tangent of half the field-of-view angle $\mbox{tan}\frac{\theta}{2}$ represents the ratio $\frac{top}{near}$, and so the inverse $\frac{1}{\mbox{tan}\frac{\theta}{2}}$ represents the ratio $\frac{near}{top}$:
+
+$$A_{projection} = 
+\begin{bmatrix}
+		\frac{1}{ratio \cdot \mbox{tan} \frac{\theta}{2}} & 	0 &			  0 & 0 \\\
+		0 &				\frac{1}{\mbox{tan}\frac{\theta}{2}} &  0 & 0 \\\
+		0 &  			0 &	  		  -\frac{far+near}{far-near} &	-\frac{2 \cdot far \cdot near}{far-near} \\\
+		0 &				0 &			  -1 & 0 
+\end{bmatrix}$$
+
+###Asymmetric Frustums (for Virtual Environments)
+
+If we want to make multi-tiled displays or stereoscopic scenes for VR, in which case we need to calculate all kinds of different frustums.  For details on the rational for making asymmetrical frustums for left and right eyes in stereoscopic rendering see [Paul Bourke's](http://paulbourke.net/stereographics/stereorender/) series of papers and take a look at some of his [slides](http://paulbourke.net/papers/HET409_2004/het409.pdf).
+
+$$A_{projection} = 
+\begin{bmatrix}
+		\frac{1}{ratio \cdot \mbox{tan} \frac{\theta}{2}} & 	0 &			  0 & 0 \\\
+		0 &				\frac{1}{\mbox{tan}\frac{\theta}{2}} &  0 & 0 \\\
+		0 &  			0 &	  		  -\frac{far+near}{far-near} &	-\frac{2 \cdot far \cdot near}{far-near} \\\
+		0 &				0 &			  -1 & 0 
+\end{bmatrix}$$
+
+<script>
+
+var mat = new GFX.Matrix([
+
+			1,.2,.3,.5,
+			.7,.9,10,12,
+			.4,.3,.8,.2,
+			1,7,.9,10
+
+		  ]);
+
+var matA = new GFX.Matrix([
+2.000,  3.000,  4.000,  5.000,
+ 4.000,  6.000,  7.000,  8.000,
+ 8.000, 10.000,  7.000, 10.000,
+11.000,  6.000, 39.000, 2.000
+	]);
+
+var matB = new GFX.Matrix([
+ 6.000,  7.000, 12.000,  7.000,
+ 7.000,  8.000,  8.000, 10.000,
+ 8.000,  7.000,  7.000,  2.000,
+ 0.600,  3.000,  2.000,  1.000
+	]);
+
+var matC = matA.mult(matB);
+
+console.log( matC )
+console.log( matC.det() );
+
+</script>
+

@@ -1,0 +1,301 @@
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style type = "text/css">
+
+svg {
+  background-color: rgba(255, 0, 0, 0.2);
+}
+
+line {
+  stroke-width: 2;
+  stroke: black;
+}
+
+.active {
+  stroke: #000;
+  stroke-width: 2px;
+}
+
+.cir {
+  stroke: #000;
+  fill-opacity: .001;
+  stroke-opacity: .5;
+  stroke-width: 0.5;
+}
+
+.point {
+  stroke: #000;
+  stroke-opacity: .5;
+  stroke-width: 0.5;
+  fill-opacity: 1;
+  fill: #17f;
+}
+
+.intersectPoint {
+  stroke: #000;
+  stroke-opacity: .5;
+  stroke-width: 0.5;
+  fill-opacity: .1;
+  fill: #17f;
+}
+
+.corner {
+  stroke: #000;
+  stroke-opacity: .5;
+  stroke-width: 0.5;
+  fill-opacity: 1;
+  fill: #17f;
+}
+
+</style>
+<svg width = "300", height = "300"/>
+<script src="http://d3js.org/d3.v4.min.js"></script>
+<script type = "text/javascript" src = "../../versor.js/versor.js"></script>
+<script type = "text/javascript" src = "../../versor.js/space/C2.js"></script>
+<script>
+
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height"),
+    radius = 32;
+
+var g = svg.append("svg:g")
+           .attr("transform", "translate("+(width/2)+", "+(height/2)+") scale(1,-1)")
+
+C2.Round = C2.Ro
+C2.Flat = C2.Fl
+
+Point  =   C2.Round.point
+Line   =   C2.Flat.line
+Circle =   C2.Round.circle
+
+//FRAME
+var tl = Point(-width/2,height/2);
+var tr = Point(width/2,height/2);
+var br = Point(width/2,-height/2);
+var bl = Point(-width/2,-height/2);
+
+var lpair = bl.op( tl );
+var tpair = tl.op( tr );
+var rpair = tr.op( br );
+var bpair = br.op( bl );
+
+var lcir = C2.Round.surround( lpair );
+var tcir = C2.Round.surround( tpair );
+var rcir = C2.Round.surround( rpair );
+var bcir = C2.Round.surround( bpair );
+
+var lline = Line( bl, tl );  
+var rline = Line( tr, br );
+var tline = Line( tl, tr );   
+var bline = Line( br, bl );
+
+var fPoint = [tl, tr, br, bl];
+var fCircle = [lcir,tcir,rcir,bcir];
+var fLine = [lline,tline,rline,bline];
+
+//get the two points on the svg perimeter to draw the line
+function lineboundary(line){
+  var output = []
+
+  var left = C2.dual( C2.dual(line).op( C2.dual(lline) ) );
+  var top = C2.dual( C2.dual(line).op( C2.dual(tline) ) );
+  var right = C2.dual( C2.dual(line).op( C2.dual(rline) ) );
+  var bottom = C2.dual( C2.dual(line).op( C2.dual(bline) ) );
+
+  var nl = left.gp( 1/left[2]);
+  var nr = right.gp( 1/right[2]);
+  var nt = top.gp( 1/top[2]);
+  var nb = bottom.gp(1/bottom[2]);
+
+  var pl = Point(nl[0],nl[1]); 
+  var pt = Point(nt[0],nt[1]); 
+  var pr = Point(nr[0],nr[1]); 
+  var pb = Point(nb[0],nb[1]);
+
+  var pts = [pl,pt,pr,pb]
+
+  for (var i = 0; i < pts.length; i++) {
+    if ( ( pts[i].ip( fCircle[i] ) ) [0] <= 0 ) {
+      output = output.concat(pts[i])
+    }
+  }
+
+  return output
+
+}
+
+
+//input a selection of points to be displayed, with optional classname 
+function updatePoints( d, s, classname ){
+
+  var sel = s || g.selectAll(".point")
+  var join = sel.data(d);
+
+  join.enter().append("svg:circle")
+     .attr("class", classname || "point")
+     .each( drawPoint )  
+     .on("click", function(d,i){ //deletion test
+        //the following is ok because if s = d3.select(this) 
+        //then data already exists and we are not entering new data
+        var tsel = classname != null ? g.selectAll("."+classname) : g.selectAll(".point"); 
+        var p = tsel.data();
+        p.splice(i,1)
+        updatePoints( p, tsel, classname || "point")
+     } ) 
+
+  join.exit().remove();
+
+  join.each( drawPoint )
+
+}
+
+//Change SVG attributes of point at this DOM element
+function drawPoint(p){
+  d3.select(this)
+    .attr("cx", p[0])
+    .attr("cy", p[1])
+    .attr("r", "3")
+}
+
+function drawCircle(c){
+  var center = C2.Round.cen(c);
+  var radius = C2.Round.radius(c);
+  d3.select(this)
+    .attr("cx", center[0])
+    .attr("cy", center[1])
+    .attr("r",  radius);
+}
+
+function drawLine(line){
+   var pts = lineboundary(line);   //intersection with frame
+   d3.select(this)                //currently bound DOM element
+     .attr("x1", pts[0][0])
+     .attr("y1", pts[0][1])
+     .attr("x2", pts[1][0])
+     .attr("y2", pts[1][1]) 
+}
+
+
+//Pass In Selection (updates visualization)   
+function updateCircles(d, s){
+
+    var sel = s || d3.selectAll(".cir");
+    var join = sel.data(d);
+
+    join.enter().append("svg:circle").attr("class","cir")
+               .each( drawCircle )   
+               .call( d3.drag().on("drag", draggedCircles ) )
+    
+    join.each( drawCircle );
+ }
+
+
+
+function updateLines(d, s){
+
+  var sel = s || g.selectAll("line");
+  var join = sel.data(d);
+
+  var dragBehavior = d3.drag().on("start", onStartDragLine) 
+                              .on("drag",  onDragLine )
+
+  join.enter().append("svg:line") 
+     .each( drawLine )
+     .call( dragBehavior )
+
+  join.each( drawLine );
+}
+
+function onStartDragLine(d){
+  d.pts = lineboundary(d); 
+  d.x = d3.event.x; d.y = d3.event.y; 
+}
+
+function onDragLine(d){
+  var x = d.x; var y = d.y;
+  pa = Point( d.pts[0][0] + (d3.event.x - d.x), d.pts[0][1] + (d3.event.y - d.y) );
+  pb = Point( d.pts[1][0] + (d3.event.x - d.x), d.pts[1][1] + (d3.event.y - d.y) );
+  updateLines([Line(pa,pb)], d3.select(this));
+}
+
+
+
+var pa = Point(-20,0);
+var pb = Point(-10,10);
+
+var la = Line( pa, pb );
+la.x = 0; la.y = 0;
+
+var ps = lineboundary(la)
+
+var ca = Circle(10,0,5);
+var cb = Circle(0,20,20);
+//ADD circlefy PARAMETERS FOR d3.drag to communicate with
+ca.r = C2.Round.radius(ca); ca.x = ca[0]; ca.y = ca[1];
+cb.r = C2.Round.radius(cb); cb.x = cb[0]; cb.y = cb[1];
+var circles = [ ca, cb ]
+
+var pair = C2.undual(ca.op(cb));
+var points = C2.Ro.split(pair);
+
+//updateLines( g.selectAll(".line").data([la]))
+updatePoints( ps.concat(fPoint) );
+updateCircles( circles, g.selectAll(".cir") )
+updateLines( fLine.concat(la) )
+
+function intersect(a, b){
+    var pair = C2.undual(a.op(b));
+    return C2.Ro.split(pair);
+}
+
+
+function updateCalc(){
+  var n = g.selectAll(".cir").data();
+  var pair = intersect(n[0],n[1])
+  updatePoints( pair, g.selectAll(".intersectPoint"), "intersectPoint" )
+}
+
+function dragged(d) {
+  var sel = d3.select(this)
+              .datum( function(d){ d.x = d3.event.x; d.y = d3.event.y; return d} )
+}
+
+function draggedCircles(d){
+  var sel = d3.select(this).datum( function(d){ 
+              var x = d3.event.x; var y = d3.event.y; var r = d.r;
+              d = C2.Ro.circle(x, y, r); 
+              d.x = x; d.y = y; d.r = r;
+              return d; 
+            } )
+
+  updateCircles(sel.data(), sel )
+  updateCalc();
+}
+
+function draggedLines(d){
+
+   var sel = d3.select(this).datum( function(d){ 
+             var pts = d.pts;
+            // console.log(pts)
+             pa = Point( pts[0][0] + d3.event.x, pts[0][1] + d3.event.y);
+             pb = Point( pts[1][0] + d3.event.x, pts[1][1] + d3.event.y);
+             d = Line(pa,pb);
+           //  d.x = d3.event.x; d.y = d3.event.y;             
+             return d
+           } )
+   updateLines(sel)
+}
+
+
+function dragstarted(d) {
+  d3.select(this).raise().classed("active", true);
+}
+
+function dragended(d) {
+  d3.select(this).classed("active", false);
+}
+
+</script>
+
