@@ -4,7 +4,7 @@ title: About
 permalink: /about/
 ---
 
-This class is about YOU:
+This class is about YOU :
 
 1- This class is about geometry, which means it is about motion.
 
@@ -27,4 +27,3 @@ More specifically, this is an introduction to computational geometry for virtual
 About [Jekyll](http://jekyllrb.com/) (the tool used to make this site)
 [jekyll source code](https://github.com/jekyll/jekyll)
 About the [jekyll-new theme](https://github.com/jglovier/jekyll-new)
-
