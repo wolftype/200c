@@ -43,6 +43,8 @@ You can now view your static blog at `my-user-name.github.io/myrepo`.  To [add p
 
 Note you can also specify a folder in your master branch which github will use to publish to `yourname.github.io/yourrepo`.  See [this link](https://github.com/blog/2228-simpler-github-pages-publishing) for details.
 
+For more info, see also [jekyll's github documentation](https://jekyllrb.com/docs/github-pages/)
+
 
 
 

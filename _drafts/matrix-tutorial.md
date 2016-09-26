@@ -112,7 +112,7 @@ $$A_{scaling} = \begin{bmatrix}
 
 Rotating is a bit more complicated, but easy if we use quaternions (which we will).  For a quaternion $\mathbb{H}$ with values $\\{w,x,y,z\\}$ the corresponding rotation matrix is:
 
-$$A = \begin{bmatrix}	
+$$A_{rotation} = \begin{bmatrix}	
 			  1-(y^2+z^2) & xy+wz    & xz-wy    & 0 \\\
 			  xy-wz	    & 1-(x^2+z^2)& yz+wx    & 0 \\\
 			  xz+wy     & yz-wx    & 1-(x^2+y^2)& 0 \\\
@@ -132,6 +132,16 @@ $$A_{translation} = \begin{bmatrix}
 \end{bmatrix}$$
 
 
+####TRS
+
+The model matrix is the translation-rotation-scale matrix.  If we do the math, that is, if we multiply these matrices together, we get
+
+$$A_{model} = \begin{bmatrix}	
+			  sx(1-(y^2+z^2)) & sy(xy+wz)   & sz(xz-wy)    & tx \\\
+			  sx(xy-wz)	    & sy(1-(x^2+z^2))& sz(yz+wx)   & ty \\\
+			  sx(xz+wy)     & sy(yz-wx)    & sz(1-(x^2+y^2))& tz \\\
+			  0		    & 0		   & 0        & 1 
+\end{bmatrix}$$
 
 
 ###View

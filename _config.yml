@@ -9,8 +9,7 @@
 title: Geometric Computing for Virtual Environments [MAT 200C]
 email:  gmail -> wolftype
 description: > # 
-  A course exploring computational geometry using linear and 
-  geometric algebras as core synthesis tools to create virtual environments. 
+  A course exploring algorithmic design of virtual environments. 
 baseurl: "/200c" # the subpath of your site, e.g. /blog
 url: "http://wolftype.github.io/200c" # the base hostname & protocol for your site
 github_username:  wolftype
