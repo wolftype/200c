@@ -1,40 +1,33 @@
-/// The Simplest GL basics: Context, Vectors, Matrices, Quaternions, Frames, Scenes
+/// The Simplest GL basics: Context, Vectors, Matrices, Quaternions, Frames, Scenes, Shaders
 
-/// The NameSpace
+var GL = GL || {}
 var GFX = GFX || { Version: 0.1 }
 
 /// Create Graphics Context By Passing in ID of canvas in body -- @todo or adding one to DOM if doesn't exist
-GFX.Context = function( canvasId ){
-	this.gl = null;
-	this.canvas = document.getElementById(canvasId);
-	this._init();
-}
+GFX.InitContext = function( canvas ){
 
-GFX.Context.prototype = {
-	
-	constructor: GFX.Context, 
-	
-	_init: function() {
-		
- 	  	// Try to grab the standard context. If it fails, fallback to experimental.
-		this.gl = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl");
-  
-  	    // If we don't have a GL context, give up now
-  	  	if (!this.gl) {
-    		alert("Unable to initialize WebGL. Your browser may not support it.");
-  	    	return
-		}
-		
-		// Enable depth testing
-	    this.gl.enable(gl.DEPTH_TEST);
-	    // Near things obscure far things
-	    this.gl.depthFunc(gl.LEQUAL);
+	console.log("initializing gl context");
+
+		// Get Context
+	GL = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+
+	    // Check for Successful Context Creation
+	  	if (!GL) {
+		alert("Unable to initialize WebGL. Your browser may not support it. Go to webglreport.com");
+	    	return
 	}
+	
+	// Enable depth testing
+    GL.enable(GL.DEPTH_TEST);
+    // Near things obscure far things
+    GL.depthFunc(GL.LEQUAL);
+
+    console.log(GL)
 }
 
 /// 3D Vector Operations
 GFX.Vector = function(x,y,z){
-	set(x,y,z)
+	this.set(x,y,z)
 }
 
 GFX.Vector.prototype = {
@@ -48,19 +41,19 @@ GFX.Vector.prototype = {
 	},
 	
 	add: function(v){
-		return new Vector(this.x+v.x, this.y+v.y, this.z+v.z);
+		return new GFX.Vector(this.x+v.x, this.y+v.y, this.z+v.z);
 	},
 
 	sub: function(v){
-		return new Vector(this.x-v.x, this.y-v.y, this.z-v.z);
+		return new GFX.Vector(this.x-v.x, this.y-v.y, this.z-v.z);
 	},
 	
 	mult: function(s){
-		return new Vector(this.x*s, this.y*s, this.z*s);
+		return new GFX.Vector(this.x*s, this.y*s, this.z*s);
 	},
 	
 	divide: function(s){
-		return new Vector(this.x/s, this.y/s, this.z/s);
+		return new GFX.Vector(this.x/s, this.y/s, this.z/s);
 	},	
 	
 	dot: function(v){
@@ -68,7 +61,7 @@ GFX.Vector.prototype = {
 	},
 	
 	cross: function(v){
-		return new Vector(this.y*vz - this.z*v.y, this.z*v.x - this.x*v.z, this.x*v.y-this.y*v.x)
+		return new GFX.Vector(this.y*v.z - this.z*v.y, this.z*v.x - this.x*v.z, this.x*v.y-this.y*v.x)
 	},
 	
 	mag: function(){
@@ -81,7 +74,7 @@ GFX.Vector.prototype = {
 	
 	neg: function(){
 		return this.mult(-1);
-	}
+	},
 
 	hom: function(){
 		return new GFX.Vector4(x,y,z,1);
@@ -108,19 +101,19 @@ GFX.Vector4.prototype = {
 	},
 	
 	add: function(v){
-		return new Vector(this.x+v.x, this.y+v.y, this.z+v.z,this.w+v.w);
+		return new GFX.Vector4(this.x+v.x, this.y+v.y, this.z+v.z,this.w+v.w);
 	},
 
 	sub: function(v){
-		return new Vector(this.x-v.x, this.y-v.y, this.z-v.z,this.w-v.w);
+		return new GFX.Vector4(this.x-v.x, this.y-v.y, this.z-v.z,this.w-v.w);
 	},
 	
 	mult: function(s){
-		return new Vector(this.x*s, this.y*s, this.z*s,this.w*s);
+		return new GFX.Vector4(this.x*s, this.y*s, this.z*s,this.w*s);
 	},
 	
 	divide: function(s){
-		return new Vector(this.x/s, this.y/s, this.z/s,this.w/s);
+		return new GFX.Vector4(this.x/s, this.y/s, this.z/s,this.w/s);
 	},	
 	
 	dot: function(v){
@@ -141,23 +134,6 @@ GFX.Vector4.prototype = {
 		
 }
 
-// GFX.Matrix3 = function(a){
-// 	this.val = a || new Float32Array([
-// 		1,0,0,
-// 		0,1,0,
-// 		0,0,1
-// 	])
-// }
-
-// GFX.Matrix3.prototype = {
-// 	constructor = GFX.Matrix3,
-
-// 	det: function(){
-// 		var m = this.val;
-//  		return m[0]*m[4]*m[8] + m[1]*m[5]*m[6] + m[2]*m[3]*m[7]
-//  			  -m[0]*m[5]*m[7] - m[1]*m[3]*m[8] - m[2]*m[4]*m[6]
-// 	}
-// }
 
 GFX.Matrix = function(a){
 
@@ -305,101 +281,37 @@ GFX.Matrix.prototype = {
 	 }
 }
 
-/// Quaternion
-GFX.Quaternion = function(w,x,y,z){
-	set(w,x,y,z);
-}
+/// Static Matrix Methods
 
-GFX.Quaternion.prototype = {
+GFX.Matrix.identity = function(){
+	return new GFX.Matrix([
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1 
+	]);
+};
 
-	constructor: GFX.Quaternion,
-	
-	set: function(w,x,y,z){
-		this.w = w || 1;
-		this.x = x || 0;
-		this.y = y || 0;
-		this.z = z || 0;
-		return this;		
-	},
-	
-	sqnorm: function(){
-		return this.w*this.w+this.x*this.x+this.y*this.y+this.z*this.z;
-	},
-	
-	norm: function(){
-		return Math.sqrt( this.sqnorm() );
-	},
-	
-	unit: function(){
-		var n = this.norm();
-		return new GFX.Quaternion(this.w/n, this.x/n, this.y/n, this.z/n);
-	},
-	
-	/// Inverse for Unit Quaternions
-	inverse: function(){
-		return new GFX.Quaternion(this.w, -this.x, -this.y, -this.z);
-	},
-	
-	setAxisAngle: function(axis, angle){
-		var half_angle = angle/2.0;
-		var s = Math.sin(half_angle);
-		var v = axis.unit().mult(-s);		
-		this.set( Math.cos(half_angle), v.x, v,y, v.z);
-		return this;
-	},
-	
-	mult: function(q){
-		return new GFX.Quaternion(	this.w * q.w - this.x * q.x + this.y * q.y + this.z * q.z,
-        			    			this.w * q.x + this.x * q.w + this.y * q.z - this.z * q.y,
-        							this.w * q.y + this.y * q.w + this.z * q.x - this.x * q.z,
-        							this.w * q.z + this.z * q.w + this.x * q.y - this.y * q.x );
-	},
-	
-	/// Apply Quaternion to Vector v
-	apply: function(v){
-		var q = this.unit();
-		var qv = new Quaternion(0,v.x,v.y,v.z);
-		var nq = q.mult(qv).mult( q.inverse() );
-		return new GFX.Vector( nq.x, nq.y, nq.z);
-	},
-	
+GFX.Matrix.translation = function(tx,ty,tz){
+	return new GFX.Matrix([
+		1, 0, 0, tx,
+		0, 1, 0, ty,
+		0, 0, 1, tz,
+		0, 0, 0, 1 
+	]);
+};
 
-	/// Convert to 4x4 Matrix
-	matrix: function(){
-		
-		var x = this.x, y = this.y, z = this.z, w = this.w;
-		var x2 = x + x, y2 = y + y, z2 = z + z;
-		var xx = x * x2, xy = x * y2, xz = x * z2;
-		var yy = y * y2, yz = y * z2, zz = z * z2;
-		var wx = w * x2, wy = w * y2, wz = w * z2;
-
-		return new GFX.Matrix([
-
-			  1-(yy+zz), xy+wz    , xz-wy    , 0,
-			  xy-wz	   , 1-(xx+zz), yz+wx    , 0,
-			  xz+wy    , yz-wx    , 1-(xx+yy), 0,
-			  0		   , 0		  , 0        , 1
-
-			]);		
-	}	
-	
-}
-
-GFX.Frame = function(){
-	this.position = new GFX.Vector();			//$V(0,0,0); //$V creates a Vector in sylvester.js
-	this.orientation =  new GFX.Quaternion(); 	//A Quaternion
-}
-
-GFX.Camera = function(){
-	this.focalLength = 100;						//parallax merge point
-	this.eyesep = .3;							//eye separation
-}
-
-GFX.Camera.prototype = {
-	constructor: GFX.Camera,
+GFX.Matrix.scale = function(sx,sy,sz){
+	return new GFX.Matrix([
+		sx, 0, 0, 0,
+		0, sy, 0, 0,
+		0, 0, sz, 0,
+		0, 0, 0, 1 
+	]);
+};
 
 	//symmetrical frustum -- feed in fovy in degrees
-	perspective: function(fovy, ratio, near, far){
+GFX.Matrix.perspective = function(fovy, ratio, near, far){
 		var f = 1.0/ Math.tan(fovy*Math.PI/360.0);  // n/t
 		var a = f/ratio;				 				  // (n/t)/(r/t)=n/r	
 		var tb = far - near;
@@ -412,21 +324,21 @@ GFX.Camera.prototype = {
 			0, 0, c,  d,
 			0, 0, -1, 0
 		]);
-	},
+	};
 
 	//general frustum (can be assymetric -- needed for stereoscopic rendering)
-	frustum: function(l,r,t,b,near,far){
+GFX.Matrix.frustum = function(l,r,t,b,near,far){
 		return new GFX.Matrix([
 			2*near/(r-l), 	0, 			  -(r+l)/(r-l), 				  0,
 			0, 				2*near/(t-b),  -(t+b)/(t-b), 				  0,
 			0,  			0,	  		  -(far+near)/(far-near), 		 -2*far*near/(far-near),
 			0,				0,			  -1, 							  0 
 		]);
-	},
+	};
 
 	//stereoscopic frustums are asymmetric -- see Paul Bourke's site
 	//right camera shifts frustum left, left camera shifts frustum right
-	stereoPerspective: function(fovy, ratio, near, far, offset, focal){
+GFX.Matrix.stereoPerspective = function(fovy, ratio, near, far, offset, focal){
 
 		var tn = Math.tan(fovy*Math.PI/360.0);   //top/near
 		var top = near * tn;                     //top
@@ -445,11 +357,11 @@ GFX.Camera.prototype = {
 			0,				0,			  -1, 							  0 
 		]);
 
-	},
+	};
 
 	//lookat (right-handed coordinates)
-	lookAt: function(eye,target,up){
-		var z = (eye - target).unit(); // direction vector
+GFX.Matrix.lookAt = function(eye,target,up){
+		var z = (eye.sub(target)).unit(); // direction vector
 		var x = (up.cross(z)).unit();  // right vector
 		var y = z.cross(x);			   // modded up vector
 		return new GFX.Matrix([
@@ -458,35 +370,389 @@ GFX.Camera.prototype = {
 			z.x, z.y, z.z, -(z.dot(eye)),
 			0,   0,   0,   1
 		]);
+	};
+
+
+/// Quaternion
+GFX.Quaternion = function(w,x,y,z){
+	this.set( w,x,y,z );
+}
+
+GFX.Quaternion.prototype = {
+
+	constructor: GFX.Quaternion,
+	
+	set: function(w,x,y,z){
+		this.w = w || 1;
+		this.x = x || 0;
+		this.y = y || 0;
+		this.z = z || 0;
+		return this;		
 	},
 
+	setAxisAngle: function(axis, angle){
+		var theta = angle/2.0;
+		var s = Math.sin(theta);
+		var v = axis.unit().mult(s);	
+		this.set( Math.cos(theta), v.x, v.y, v.z);
+		return this;
+	},
+
+	setRelative: function(v1, v2){
+		// axis is unit normal to the plane spanned by v1 and v2
+		// angle is the inverse cosine of the dot product between them
+		return setAxisAngle( v1.cross(v2), Math.acos( v1.dot(v2) ))
+	},
+
+	setDirection: function(v){
+		return setRelative( new GFX.Vector(0,0,1), v);
+	},
+
+	sqnorm: function(){
+		return this.w*this.w+this.x*this.x+this.y*this.y+this.z*this.z;
+	},
+	
+	norm: function(){
+		return Math.sqrt( this.sqnorm() );
+	},
+	
+	unit: function(){
+		var n = this.norm();
+		return new GFX.Quaternion(this.w/n, this.x/n, this.y/n, this.z/n);
+	},
+	
+	/// Inverse for Unit Quaternions
+	inverse: function(){
+		return new GFX.Quaternion(this.w, -this.x, -this.y, -this.z);
+	},
+	
+	
+	mult: function(q){
+		return new GFX.Quaternion(	this.w * q.w - this.x * q.x - this.y * q.y - this.z * q.z,
+        			    			this.w * q.x + this.x * q.w + this.y * q.z - this.z * q.y,
+        							this.w * q.y + this.y * q.w + this.z * q.x - this.x * q.z,
+        							this.w * q.z + this.z * q.w + this.x * q.y - this.y * q.x );
+	},
+	
+	/// Apply Quaternion to Vector v
+	apply: function(v){
+		var q = this.unit();
+		var qv = new GFX.Quaternion(0,v.x,v.y,v.z);
+		var nq = q.mult(qv).mult( q.inverse() );
+		return new GFX.Vector( nq.x, nq.y, nq.z);
+	},
+	
+
+	/// Convert to 4x4 Matrix
+	matrix: function(){
+		
+		var x = this.x, y = this.y, z = this.z, w = this.w;
+		var x2 = x + x, y2 = y + y, z2 = z + z;
+		var xx = x * x2, xy = x * y2, xz = x * z2;
+		var yy = y * y2, yz = y * z2, zz = z * z2;
+		var wx = w * x2, wy = w * y2, wz = w * z2;
+
+		return new GFX.Matrix([
+
+			  1-(yy+zz), xy-wz    , xz+wy    , 0,
+			  xy+wz	   , 1-(xx+zz), yz-wx    , 0,
+			  xz-wy    , yz+wx    , 1-(xx+yy), 0,
+			  0		   , 0		  , 0        , 1
+
+			]);		
+	},
+
+
 	
 }
 
-var Scene = function(){
-	
-	this.color = [1.0,0.0,0.0,1.0];
-	
-	this.clear = function( gl ){
-    	gl.clearColor( this.color[0], this.color[1], this.color[2], this.color[3] );
-	    // Clear the color as well as the depth buffer.
-	    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    }
-	
-	this.render = function( context ){
-		 
-	    var projection = cam.perspective(45, context.canvas.width/context.canvas.height, 0.1, 100.0);
-  
-	    var modelViewMatrix =  cam.lookAt( 0, 0, -6, 
-	                                       Math.sin(3.14*timer/720.0), 0, 0,
-	                                       0, 1, 0 );
-	    //Send Matrices over to GPU 
-	    setMatrixUniform("uPMatrix", perspectiveMatrix.flatten() );
-	    setMatrixUniform("uMVMatrix", modelViewMatrix.flatten() );
-		
-    	//resize to canvas width and height
-    	context.gl.viewport(0,0, context.canvas.width, context.canvas.height);	
+GFX.Frame = function(x,y,z){
+	this.position = new GFX.Vector(x,y,z);			///< A 3D Position
+	this.orientation =  new GFX.Quaternion(); 	    ///< A 3D Orientation
+	this.scale = new GFX.Vector(1,1,1); 			///< A 3D Vector
+};
+
+GFX.Frame.prototype = {
+	constructor: GFX.Frame,
+
+	/// equivalent to this.orientation.apply( new GFX.Vector(1,0,0) 
+	x: function(){
+		var q = this.orientation;
+		return new GFX.Vector( 1-(2*(q.y*q.y + q.z*q.z)), 2*(q.x*q.y + q.w*q.z), 2*(q.x*q.z - q.w*q.y) );
+	},
+
+	/// equivalent to this.orientation.apply( new GFX.Vector(0,1,0) 
+	y: function(){
+		var q = this.orientation;		
+		return new GFX.Vector( 2*(q.x*q.y - q.w*q.z), 1-(2*(q.x*q.x + q.z*q.z)), 2*(q.y*q.z+q.w*q.x) );
+	},
+
+	/// equivalent to this.orientation.apply( new GFX.Vector(0,0,1) )
+	z: function(){
+		var q = this.orientation;		
+		return new GFX.Vector( 2*(q.x*q.z + q.w*q.y), 2*(q.y*q.z-q.w*q.x), 1-(2*(q.x*q.x + q.y*q.y)) );
+	},
+
+	//pitch
+	rotateX: function(rad){
+		this.orientation.setAxisAngle( this.x(), rad );
+	},
+
+	//yaw
+	rotateY: function(rad){
+		this.orientation.setAxisAngle( this.y(), rad );
+	},
+
+	//roll
+	rotateZ: function(rad){
+		this.orientation.setAxisAngle( this.z(), rad );
+	},
+
+	//matrix representation
+	matrix: function(){
+		var rmat = this.orientation.matrix();
+		var r = rmat.val;
+		var s = this.scale;
+		var t = this.position;
+		var m =  GFX.Matrix.translation(t.x,t.y,t.z).mult( rmat ).mult( GFX.Matrix.scale(s.x,s.y,s.z) );
+		var m2 = new GFX.Matrix([
+			s.x*r[0], s.y*r[1], s.z*r[2],  t.x,
+			s.x*r[4], s.y*r[5], s.z*r[6],  t.y,
+			s.x*r[8], s.y*r[9], s.z*r[10], t.z,
+			0, 		  0,	    0, 		   1
+		]);
+
+		//console.log("a", m.val);
+		//console.log("b", m2.val);
+		//console.log("r", r)
+		return m2;
+
+	}	
+
+};
+
+GFX.Camera = function(){
+	this.focalLength = 100;						//parallax merge point
+	this.eyesep = .3;							//eye separation
+	this.frame = new GFX.Frame(0,0,5);		    //position and orientation
+};
+
+
+GFX.Shader = function(){};
+
+GFX.Shader.prototype = {
+	constructor: GFX.Shader,
+
+	create: function(){
+		console.log("shader creating ... ")
+		this.id = GL.createProgram();
+		this.vertId = GL.createShader(GL.VERTEX_SHADER);
+		this.fragId = GL.createShader(GL.FRAGMENT_SHADER);
+
+	},
+
+	load: function( vert, frag ){
+		console.log("shader loading ...");
+		GL.shaderSource(this.vertId, vert);
+		GL.shaderSource(this.fragId, frag);
+	},
+
+	compile: function(){
+		console.log("shader compiling ...")
+		GL.compileShader( this.vertId );
+		this.checkCompilation( this.vertId);
+
+		GL.compileShader( this.fragId );
+		this.checkCompilation( this.fragId);
+	},
+
+	checkCompilation: function(id){
+		console.log("shader checking compilation ...")
+		if (!GL.getShaderParameter(id, GL.COMPILE_STATUS)) {  
+      		alert("Shader Compiler Error: " + GL.getShaderInfoLog(id));  
+      		GL.deleteShader(id);
+      		return null;  
+  		}
+	},
+
+	link: function(){
+		console.log("shader linking ... ")
+		GL.attachShader( this.id, this.vertId);
+		GL.attachShader( this.id, this.fragId);
+		GL.linkProgram( this.id );
+
+		this.checkLinking();
+	}, 
+
+	checkLinking: function(){
+		console.log("shader checking linking ...")
+  		if (!GL.getProgramParameter(this.id, GL.LINK_STATUS)) {
+    		alert("Shader Linking Error: " + GL.getProgramInfoLog(shader));
+  		}
+	},
+
+	bind: function(){
+		GL.useProgram(this.id);
+	},
+
+	unbind: function(){
+		//GL.useProgram(0);
+	},	
+
+	program: function(vert, frag){
+		this.create();
+		this.load(vert,frag);
+		this.compile();
+		this.link();
+		this.bind();
+		this.printActiveAttributes();
+	},
+
+	printActiveAttributes: function(){
+		for (i = 0; i < GL.getProgramParameter(this.id, GL.ACTIVE_ATTRIBUTES); i++){
+			var name = GL.getActiveAttrib( this.id, i).name;
+			console.log("attribute:", name, i);
+		}
+	},
+
+	setUniformMatrix: function (name, value) {
+  		var uID = GL.getUniformLocation(this.id, name);
+  		GL.uniformMatrix4fv(uID, false, new Float32Array(value));
+	},
+
+    setUniformFloat: function(name, value) {
+  		var uID = GL.getUniformLocation(this.id, name);
+  		GL.uniform1f(uID, value);
+	},
+
+	/// Call after a GFX.Shader is bound
+	enableAttribute: function(name){
+		GL.enableVertexAttribArray( this.getAttribute(name) );
+	},
+
+	getAttribute: function(name){
+		return GL.getAttribLocation(this.id, name);
+	},
+
+	/// Call after binding a GFX.Buffer 
+	/// note: some assumptions are made here for simplicity -- e.g. must be floats with no offset in data
+	pointAttribute: function(name, size){
+		GL.vertexAttribPointer( this.getAttribute(name), size, GL.FLOAT, false, 0, 0);
+	}	
+};
+
+
+/// type: Options are GL.ARRAY_BUFFER and GL.ELEMENT_ARRAY_BUFFER
+GFX.Buffer = function(type){
+	this.type = type || GL.ARRAY_BUFFER;
+	this.create();
+	this.bind();
+};
+
+GFX.Buffer.prototype = {
+	constructor: GFX.Buffer,
+
+	create: function(){
+		this.id = GL.createBuffer();
+	},
+
+	bind: function(){
+  		GL.bindBuffer(this.type, this.id );
+	},
+
+	/// size: byteLength()
+	/// hint: GL.STATIC_DRAW, GL.DYNAMIC_DRAW or GL.STREAM_DRAW
+	alloc: function(size, hint){ 							
+  		GL.bufferData(this.type, size, hint || GL.STATIC_DRAW);
+	},
+
+	data: function(data, offset){
+		var offset = offset || 0;
+		GL.bufferSubData(this.type, offset, data);
+	},
+
+	drawElements: function(mode, num){
+		GL.drawElements( mode, num, GL.UNSIGNED_SHORT, 0);
+	},
+
+	drawArrays: function(mode, num){
+		GL.drawArrays( mode, 0, num)
+	},
+
+};
+
+GFX.Mesh = function(){
+	this.frame = new GFX.Frame();
+	this.vertexBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
+	this.colorBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
+	this.indexBuffer = new GFX.Buffer( GL.ELEMENT_ARRAY_BUFFER );
+};
+
+GFX.Mesh.prototype = {
+	constructor: GFX.Mesh,
+
+	/// Bind current objects model matrix to shader uniform
+	updateModel: function(shader){
+		var tmp = this.frame.matrix().transpose();
+		shader.setUniformMatrix("model", tmp.val);//this.frame.matrix().transpose().val );
 	}
+};
+
+/// Scene to be created after GFX.Context() has defined a global GL context
+GFX.Scene = function(width, height){
+	
+	this.width = width || GL.canvas.width;			///< Width of Context in Pixels
+	this.height = height || GL.canvas.height;		///< Height of Context in Pixels
+	this.camera = new GFX.Camera();					///< View and Projection matrices
+	this.shader = new GFX.Shader();					///< Vertex and Fragment Shader
+	this.color = [1.0,0.0,0.0,1.0]; 				///< Background Color
+	this.time = 0;									///< Time to increment every render()
+
+};
+
+GFX.Scene.prototype = {
+
+	constructor: GFX.Scene,
+
+	clear: function( ){
+    	GL.clearColor( this.color[0], this.color[1], this.color[2], this.color[3] );
+	    GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
+    },
+	
+	begin: function(){
+		 
+		this.time += 10;
+
+	    //Model Matrix
+	    var model = GFX.Matrix.identity();
+
+  		//View Matrix
+	    var view =  GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
+	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
+	                                   this.camera.frame.y() );									//up
+
+		//Projection Matrix
+	    var projection = GFX.Matrix.perspective(45, this.width/this.height, 0.1, 100.0);
+  
+
+	    //Send Matrices over to GPU (transposed because GLSL matrices are column major)
+	    this.shader.bind();
+	    this.shader.setUniformMatrix("model", model.transpose().val );		
+	    this.shader.setUniformMatrix("view", view.transpose().val );
+	    this.shader.setUniformMatrix("projection", projection.transpose().val );
+
+    	//resize to canvas width and height
+    	this.clear();
+    	GL.viewport(0,0, this.width, this.height);	
+	},
+
+	end: function(){
+		this.shader.unbind();
+	}
+
+
 	
 }
+
+
 

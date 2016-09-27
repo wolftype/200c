@@ -4,17 +4,18 @@ layout: default
 
 <div class="home">
 
-  <h1 class="page-heading">Posts</h1>
-
   <ul class="post-list">
-    {% for post in site.posts %}
+    {% for category in site.categories %}
+      <h1>{{ category[0] | capitalize }}</h1>
+      {% assign sorted = category[1] | sort %}
+      {% for post in sorted %}
       <li>
-        <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
-
         <h2>
           <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
+          {{ post.excerpt }}
         </h2>
       </li>
+      {% endfor %}
     {% endfor %}
   </ul>
 

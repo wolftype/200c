@@ -2,30 +2,49 @@
 
 ---
 
-###List of Topics
+
+### List of Topics
 
 
-####Pipeline:
+#### Pipeline
 
 OpenGL Contexts
 Vertex and Fragment Shaders
 Matrix Transformations
 
+#### Transformation
 
-###Color
+Complex Numbers and Quaternions
+3D Euclidean Geometric Algebra
+Basic Physics
+Forward and Inverse Kinematics
 
+#### Shape
 
+Curves and Surfaces 
+Mesh Processing
+Procedural Graphics
 
-####Partitions
+#### Dynamics
 
-Quadtrees (d3) and Octrees
-Game Programming Pattern (lists)
-Voronoi and Delauney
+Fluids
+Reaction Diffusion
+Particle Systems
+Flocking and Swarming
 
-###Shape
+#### Space
 
-Curves and Surfaces (Bezier, BSpline)
-Procedural Graphics (e.g. terrain)
-Dynamics (Fluids, Reaction Diffusion, Particle Systems, Flocking and Swarming)
+Partitions, Quadtrees and Octrees
+Voronoi and Delauney Triangulations
 
+#### Color
+RGB, HSV, and other color spaces
 
+#### Experiments
+N-Dimensional Transformations
+Projective and Conformal Geometry
+
+#### Final Projects
+Environment for the AlloSphere
+Environment for the Cuttlefish Display
+Environment for the HTC Vive

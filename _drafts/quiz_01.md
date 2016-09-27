@@ -8,7 +8,7 @@ b) column-major
 
 A 3D vector (x,y,z) that has been given an additional value w is a:
 
-a) homogeneous coordinate
+a) vector in homogeneous coordinates
 b) quaternion
 d) impossible
 
@@ -21,7 +21,7 @@ c) rotations
 d) all of the above
 
 
-The correct order of matrix multiplication when creating the model matrix is:
+The typical order of matrix multiplication when creating the model matrix is:
 
 a) rotation * translation * scaling
 b) translation * scaling * rotation
@@ -32,8 +32,7 @@ f) rotation * scaling * translation
 g) doesn't matter
 
 
-We are sitting in an OpenGL scene with the x axis pointing to our right and the y axis pointing
-upwards.  If we want to move in the positive z direction we should:
+We are sitting in an OpenGL scene with the x axis pointing to our right and the y axis pointing upwards.  If we want to move in the positive z direction we should:
 
 a) walk forward
 b) walk backward
