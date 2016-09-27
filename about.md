@@ -29,15 +29,10 @@ It is in a sense programming-language agnostic -- we will use C++ and javascript
 ## So what is this class really about?
 
 1- This class is about geometry, which means it is about motion.
-
 2- This class is about motion, which means it is about space.
-
 3- This class is about space, which means it is about graphics.
-
 4- This class is about graphics, which means it is about seeing.
-
 5- This class is about seeing, which means it is about you.
-
 6- This class is about you.
 
 -------
