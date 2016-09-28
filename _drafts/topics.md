@@ -1,29 +1,36 @@
 ---
-
+layout: page
+category: syllabus
 ---
 
+A schedule of topics we will cover:
 
-### List of Topics
+#### Week One: Pipeline
+Contexts and Loops
+Shaders and Buffers
 
+#### Week Two: Transformations I
+Matrices
+Quaternions
 
-#### Pipeline
+#### Week Three: Transformations II
+Geometric Algebra
+Spherical Trigonometry
 
-OpenGL Contexts
-Vertex and Fragment Shaders
-Matrix Transformations
-
-#### Transformation
-
-Complex Numbers and Quaternions
-3D Euclidean Geometric Algebra
+#### Week Four: Transformations III
+Forward Kinematics
 Basic Physics
-Forward and Inverse Kinematics
 
-#### Shape
+#### Shapes
 
 Curves and Surfaces 
-Mesh Processing
-Procedural Graphics
+Meshes
+
+#### Midterm Projects
+
+#### Color and Lighting
+RGB, HSV
+Lighting Models
 
 #### Dynamics
 
@@ -37,8 +44,7 @@ Flocking and Swarming
 Partitions, Quadtrees and Octrees
 Voronoi and Delauney Triangulations
 
-#### Color
-RGB, HSV, and other color spaces
+
 
 #### Experiments
 N-Dimensional Transformations

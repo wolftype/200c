@@ -3,18 +3,46 @@
 permalink: /homework/
 ---
 
-Each week of 200c consists of a lecture with accompanying online tutorial.  This will be followed by a task
-that we will start together in class.
+<script type="text/javascript" src="https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/build/GlslCanvas.js"></script>
 
-Midterm: Create a 2D Print
+<canvas data-fragment="
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+uniform float u_time;
+
+void main() {
+    vec2 st = gl_FragCoord.xy/u_resolution.xy;
+    st.x *= u_resolution.x/u_resolution.y;
+
+    st += vec2(.0);
+    vec3 color = vec3(1.);
+    color = vec3(st.x,st.y,abs(sin(u_time)));
+
+    gl_FragColor = vec4(color,1.0);
+}
+
+"
+
+width="800" height="600"> </canvas>
+
+
+
+Midterm: Create a 2D Algorithmic Print and present the process with 5-10 slides.
 
 *Assignment:* Into the Shade
 
-Sign up for 200c mailing list.
-Using WebGL, create a context and compile a shader program that changes based on some float uniform time.
+1. Using the interactive editor at [http://editor.thebookofshaders.com/]() develop a program that changes based on the float `u_time`.
+
 Create an account on [github](https://github.com/), publish your work as a [gist](https://help.github.com/articles/about-gists/).
 
 Reading: [The Book of Shaders](https://thebookofshaders.com/)
+Reading: [WebGL Tutorial Part One]({{ site.baseurl}}{% post_url 2016-09-18-webGL-1-context-and-loop%}) and [WebGL Tutorial Part Two]({{ site.baseurl}}{% post_url 2016-09-18-webGL-2-shaders-and-buffers%})
+Reading: (optional) [LearnOpenGL](http://learnopengl.com/)
 
 
 *Assignment:* Binding Agreement

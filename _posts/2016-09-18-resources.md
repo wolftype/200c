@@ -1,6 +1,6 @@
 ---
 layout: page
-category: Resources
+category: xtra
 ---
 
 Some Useful Links

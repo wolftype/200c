@@ -26,17 +26,21 @@ This uses github's built-in support for jekyll, a static blog generator.  To mak
 
 		bundle install
 
-5. Add line to `_config.yml' that reads
+5. Create new local jekyll site
 
+		bundle exec jekyll new . --force
+
+6. Add line to `_config.yml' that reads
+		
 		baseurl: "/myrepo"
 
-6. Write posts to `_posts` folder, prepend href links with `{{site.baseurl}}/`
+7. Write posts to `_posts` folder, prepend href links with `{{site.baseurl}}/`
 
-7. To preview your blog locally on your computer at `localhost:4000/myrepo`:
+8. To preview your blog locally on your computer at `localhost:4000/myrepo`:
 
 		bundle exec jekyll serve
 
-8. Add, Commit, and Push changes
+9. Add, Commit, and Push changes
 
 You can now view your static blog at `my-user-name.github.io/myrepo`.  To [add posts](https://jekyllrb.com/docs/posts/), add markdown (or html or optionally other with the right plug-in) files to the
 `_posts` folder with the name `YEAR-MONTH-DAY-postname.md`

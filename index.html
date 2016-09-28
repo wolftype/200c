@@ -2,10 +2,15 @@
 layout: default
 ---
 
+<center>
+<iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width="1000" height="200" src="scratch/webgl_shaders.html"></iframe>
+</center>
+
 <div class="home">
 
   <ul class="post-list">
-    {% for category in site.categories %}
+    {% assign sorted_cats = site.categories | sort %}
+    {% for category in sorted_cats %}
       <h1>{{ category[0] | capitalize }}</h1>
       {% assign sorted = category[1] | sort %}
       {% for post in sorted %}

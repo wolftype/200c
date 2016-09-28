@@ -15,11 +15,11 @@ I suggest using Chrome for developing WebGL apps.  In Chrome, You can navigate t
 
 ## Contexts
 
-In the land of OpenGL (The "GL" stands for "**G**raphics **L**ibrary" ... or maybe **L**anguage) and all its flavors (OpenGL ES, WebGL), a rendering **context** is a channel on which drawing states are transmitted to the device's window. A single application can have many contexts, but only one is **current** at any given time on any given thread of execution.
+In the land of OpenGL (The "GL" stands for "**G**raphics **L**ibrary" ... or sometimes **L**anguage) and all its flavors (OpenGL ES, WebGL), a rendering **context** is a channel on which drawing states are transmitted to the device's window. A single application can have many contexts, but only one is **current** at any given time on any given thread of execution.
 
 A [WebGLRenderingContext](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext) is created by calling `getContext("webgl")` on `canvas` element `canvas.getContext("webgl")` (note, for version 2.0, one will eventually pass in "webgl2").  The following four lines of code grab a canvas element, initialize a web context on it, set the clear color to red, and then clears the screen (with red):
 
-		{%highlight javascript linenos%}
+		{%highlight javascript%}
 		var canvas = document.getElementById("canvas");
 		var gl = canvas.getContext("webgl");
 		gl.clearColor(1.0, 0.0, 0.0, 1.0);
