@@ -1,0 +1,28 @@
+<html>
+<script type="text/javascript">
+
+var GL;
+
+function initWebGL(){
+   // Get Canvas Element
+   var canvas = document.getElementById("glcanvas");
+   // Get A WebGL Context
+   GL = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+   // Test for Success
+   if (!GL) {
+      alert("Unable to initialize WebGL. Your browser may not support it.");
+   }
+   // Set clear color to red, fully opaque
+   GL.clearColor(1.0, 0.0, 0.0, 1.0);
+   // Clear Screen
+   GL.clear(GL.COLOR_BUFFER_BIT| GL.DEPTH_BUFFER_BIT);
+}
+</script>
+
+<body onload = initWebGL() >
+<canvas id="glcanvas" width=640 height=480 style = "margin:auto; display:block"> 
+ Oops, browser has no <code> canvas </code> tag support 
+</canvas>
+</body>
+
+</html> 

@@ -1,0 +1,36 @@
+<html>
+<script type="text/javascript" src="https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/build/GlslCanvas.js"></script>
+<body>
+<canvas class="glslCanvas" data-fragment="
+
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+#define PI 3.14
+
+uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+uniform float u_time;
+
+mat2 rot(float theta){
+	return mat2(cos(theta), sin(theta), -sin(theta), cos(theta));
+}
+
+mat2 scale(vec2 s){
+	return mat2(s.x, 0.0, 0.0, s.y);
+}
+
+void main() {
+    vec2 st = gl_FragCoord.xy/u_resolution.xy;
+    st.x *= u_resolution.x/u_resolution.y;
+    st = ( (fract(3.0 * st))*2.-1.);
+    float d = fract(5.0*distance( st, vec2(0.0))+u_time);
+    vec3 color = vec3(smoothstep(.6,1.,d),0.,0.);
+    gl_FragColor = vec4(color,1.0);
+}
+
+"
+width="800" height="600"> </canvas>  
+</body>
+</html>
