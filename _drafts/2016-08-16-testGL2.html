@@ -1,0 +1,180 @@
+<html>
+<script type="text/javascript" src="../js/gfx.js"></script>
+
+<script type="text/javascript">
+
+//ANIMATION FUNCTION (to be passed a callback)  see also http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/
+window.requestAnimFrame = ( function() {
+   
+    return  window.requestAnimationFrame || 
+            window.webkitRequestAnimationFrame ||  
+            window.mozRequestAnimationFrame || 
+            window.oRequestAnimationFrame || 
+            window.msRequestAnimationFrame ||
+    
+    // if none of the above, use non-native timeout method
+    function(callback) {
+      window.setTimeout(callback, 1000 / 60);
+    };
+  
+  } ) (); 
+
+
+function animate(){
+  // feedback loop requests new frame
+  requestAnimFrame( animate );
+  render(); //defined below
+}
+
+function start() {
+  init();
+  animate();
+}
+
+var scene;
+var timer = 0;
+var box;
+
+/// This happens once
+function init(){
+
+  //This defines a new global variable "GL"
+  GFX.InitContext( document.getElementById("glcanvas") );
+  
+  var vertScript = document.getElementById("vertScript").text;
+  var fragScript = document.getElementById("fragScript").text;
+
+  scene = new GFX.Scene();
+
+  scene.shader.program( vertScript, fragScript );
+
+
+  var vertices = new Float32Array( [
+    -1.0, -1.0, -1.0,
+    -1.0, 1.0,  -1.0,
+    1.0,  1.0,  -1.0,
+    1.0,  -1.0, -1.0,
+    -1.0, -1.0, 1.0,
+    -1.0, 1.0,  1.0,
+    1.0,  1.0,  1.0,
+    1.0,  -1.0, 1.0,
+  ]);
+
+  var colors = new Float32Array([
+    1.0,0.0,0.0,
+    0.0,1.0,0.0,
+    0.0,0.0,1.0,
+    1.0,1.0,0.0,
+    0.0,1.0,1.0,
+    1.0,0.0,1.0,
+    0.0,0.0,0.0,
+    1.0,1.0,1.0
+  ]);  
+
+  var indices = new Uint16Array([
+    0,1,3,2,7,6,4,5,0,1
+  ]);
+
+  //Create and Bind two new array buffers and a new element array buffer
+  box = new GFX.Mesh();
+
+  //Allocate Some Data on the GPU and copy data over
+  box.vertexBuffer.bind();
+  box.vertexBuffer.alloc( vertices.byteLength );
+  box.vertexBuffer.data(vertices);
+
+  //Allocate Some Data on the GPU and copy data over
+  box.colorBuffer.bind();
+  box.colorBuffer.alloc( colors.byteLength );
+  box.colorBuffer.data(colors);
+
+  //Allocate Some Data on the GPU and copy data over
+  box.indexBuffer.bind();
+  box.indexBuffer.alloc( indices.byteLength );
+  box.indexBuffer.data(indices);
+}
+
+
+// Render the scene
+function render() {
+
+  timer = timer +1;
+
+  scene.camera.frame.rotateY( Math.sin( timer / 180.0) * Math.PI / 10  );
+
+  //begin scene render
+  scene.begin();
+
+    scene.shader.enableAttribute( "position" );
+    scene.shader.enableAttribute( "color" );
+    
+    //Send Time Variable over to GPU
+    scene.shader.setUniformFloat("uTime", 3.14 * timer / 180.0)
+
+    //upload model matrix
+    box.frame.rotateX( Math.PI * timer/180.0 );
+    box.frame.scale.x = Math.sin( timer/180.0 );
+    box.updateModel(scene.shader)
+
+    //Bind Vertex Buffer
+    box.vertexBuffer.bind();
+    //Point Buffer to Attribute in shader
+    scene.shader.pointAttribute("position", 3);
+
+    //Bind Color Buffer
+    box.colorBuffer.bind();
+    //Point Buffer to Attribute in Shader
+    scene.shader.pointAttribute("color", 3)
+
+    //Bind Index Buffer
+    box.indexBuffer.bind();
+    //Draw the 10 indices
+    box.indexBuffer.drawElements(GL.TRIANGLE_STRIP, 10);
+
+  scene.end();
+}
+
+</script>
+
+<!-- VERTEX SHADER -->
+<script id="vertScript" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  attribute vec3 position;      //Position
+  attribute vec3 color;         //Color
+
+  uniform mat4 model;           //Model Matrix
+  uniform mat4 view;            //View Matrix
+  uniform mat4 projection;      //Projection Matrix
+
+  varying vec3 vcolor;     //Color to output to fragment shader
+
+  void main(void) {
+    vcolor = color;
+    gl_Position = projection * view * model * vec4(position, 1.0);
+  }
+</script>
+
+<!-- FRAGMENT SHADER -->
+<script id="fragScript" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform float uTime;  
+  varying vec3 vcolor;           //Color from vertex shader
+
+  void main(void) {
+    gl_FragColor = vec4(vcolor,1.0);
+  }
+</script>
+
+<body onload=start()>
+<canvas id="glcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
+
+</body>
+</html>

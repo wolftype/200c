@@ -7,7 +7,12 @@ var vertexBuffer;
 var indexBuffer;
 var timer = 0;
 
-
+var m;
+var n1;
+var n2;
+var n3;
+var a;
+var b;
 
 function initWebGL(){
     // Get Canvas Element
@@ -69,7 +74,13 @@ function initShaderProgram(){
       alert("Shader Linking Error: " + GL.getProgramInfoLog(shader));
     }     
 
-    
+    //get sliders for uniforms
+    m = document.getElementById("m");
+    n1 = document.getElementById("n1");
+    n2 = document.getElementById("n2");
+    n3 = document.getElementById("n3");   
+    a = document.getElementById("a");  
+    b = document.getElementById("b");  
 }
 
 function initBuffers(){
@@ -135,6 +146,20 @@ function render(){
     //Update uniform variable on shader
     var uID = GL.getUniformLocation(shaderId, "uTime");
     GL.uniform1f(uID, timer);
+    
+
+    uID = GL.getUniformLocation(shaderId, "m");
+    GL.uniform1f(uID, m.value);
+    uID = GL.getUniformLocation(shaderId, "n1");
+    GL.uniform1f(uID, n1.value/100.);
+    uID = GL.getUniformLocation(shaderId, "n2");
+    GL.uniform1f(uID, n2.value/100.);
+    uID = GL.getUniformLocation(shaderId, "n3");
+    GL.uniform1f(uID, n3.value/100.);
+    uID = GL.getUniformLocation(shaderId, "a");
+    GL.uniform1f(uID, a.value/100.);
+    uID = GL.getUniformLocation(shaderId, "b");
+    GL.uniform1f(uID, b.value/100.);    
     //Enable Position Attribute
     var attId = GL.getAttribLocation(shaderId, "position");
     GL.enableVertexAttribArray(attId);
@@ -173,36 +198,50 @@ function start(){
 <!-- FRAGMENT SHADER SOURCE -->
 <script id="fragScript" type="text/glsl">
 
-  #ifdef GL_ES
-  precision lowp float;
-  #endif
+#ifdef GL_ES
+precision mediump float;
+#endif
 
-  #define PI 3.14159265359
+#define PI 3.14
 
-  uniform float uTime;
+// 2D Supershape Formula: 
+// 1/r = n1 * sqrt( pow(abs(cos(theta*m/4)/a), n2) + pow(abs(sin(theta*m/4)), n3));
 
-  void main(void) {
+uniform float m;
+uniform float n1;
+uniform float n2;
+uniform float n3;
+uniform float a;
+uniform float b;
 
-    //divide pixel location by width and height
-    vec2 st = gl_FragCoord.xy/vec2(1000,200).xy;
-    st = st*2. -1.;
-    vec2 nst = vec2(st.x, st.y / 5.0);
-    float r = 0.0;
-    float d = fract(3.*distance(nst,vec2(0.))-uTime/50.0);
-    r = smoothstep(.1, .5, d);
-   // r = smoothstep(.0, .1, d) - smoothstep(.3 - (st.x*.2), .4, d);
-    float g = st.y;   
-    float b = st.x+st.y;
-    vec3 color = vec3(r/1.0,0.0,r/2.0);//,1.,1.);
-    gl_FragColor = vec4(color,r);
-  }
+float supershape(float theta){
+    return 1.0 / pow( pow(abs(cos(theta*m/4.)/a), n2) + pow(abs(sin(theta*m/4.)/b), n3), 1.0/n1 );
+}
+
+void main(){
+
+    vec2 st = gl_FragCoord.xy/vec2(640.,480.);
+    st = st*2.-1.;
+    float theta = atan(st.x, st.y);
+    float r = length(st);
+    float f = supershape(theta);
+
+
+    vec3 color = vec3(smoothstep(f,f+.02,r));
+    gl_FragColor = vec4(color,1.0); 
+}
 </script>
 
 <body onload = start() >
-<canvas id="glcanvas" width=1000 height=200 style = "margin:auto; display:block"> 
+<canvas id="glcanvas" width=640 height=480 style = "margin:auto; display:block"> 
  Oops, browser has no <code> canvas </code> tag support 
 </canvas>
-
+<input type="range" id ="m" step=".01"> (m) </input>
+<input type="range" id ="n1"> (n1) </input>
+<input type="range" id ="n2"> (n2) </input>
+<input type="range" id ="n3"> (n3) </input>
+<input type="range" id ="a"> (a) </input>
+<input type="range" id ="b"> (b) </input>
 </body>
 
 </html> 

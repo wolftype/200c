@@ -1,0 +1,27 @@
+Who would like to present what they've done to the class?
+
+Questions about the Reading? Trouble with the Homework?
+
+[Comments on "precision"?]
+
+Fragment Review Details:
+
+How Do We Plot lines?
+
+	float f = sin(x);  /// value [-1,1]
+	float yval = step(f, st.y);
+	Smoothstep -- subtracting f, f+2 from f+2, f
+
+How Do We Draw Shapes?
+
+	Step functions and multiplication
+	Plotting polar coordinates
+
+
+	
+2D Matrices (rotations and scales)
+3D Rotations (Quaternions)
+
+
+
+

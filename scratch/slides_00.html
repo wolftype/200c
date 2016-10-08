@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Coordinate Systems</title>
+
+		<link rel="stylesheet" href="../css/reveal.css">
+		<link rel="stylesheet" href="../css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../css/print/pdf.css' : '../css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+	</head>
+	<body>
+		<script src="../lib/js/head.min.js"></script>
+		<script src="../js/reveal.js"></script>
+		<script type="text/javascript" src="https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/build/GlslCanvas.js"></script>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+				<h2>Coordinate Systems</h2>
+				<img src = "../imgs/circles.jpg" width="800" height = "400"/>
+				</section>
+				<section data-markdown>
+				<script type="text/template">
+				### Rescaling Coordinates
+
+						vec2 st = gl_FragCoord.xy/u_resolution.xy;
+						st = st*2.-1.;
+
+				<svg width = "400" height="400">
+				<line x1="0" y1="200" x2="400" y2="200" stroke="red"/>
+				<line x1="200" y1="0" x2="200" y2="400" stroke="red"/>
+
+				<text x="220" y="40" fill = "white"> 1 </text>
+				<text x="210" y="400" fill = "white"> -1 </text>
+				<text x="0" y="240" fill = "white"> -1 </text>
+				<text x="370" y="240" fill = "white"> 1 </text>
+				</svg>
+				</script>
+
+				</section>
+
+
+
+				<section data-markdown>
+
+				<script type ="text/template">
+				### Trigonometry
+
+$$x=\mbox{cos}\theta$$
+$$y=\mbox{sin}\theta$$
+
+$$\frac{y}{x}=\mbox{tan}\theta$$
+
+
+<svg width = "400" height="400">				
+<line x1="0" y1="200" x2="400" y2="200" stroke="red"/>
+<line x1="200" y1="0" x2="200" y2="400" stroke="red"/>
+<line x1="200" y1="200" x2="300" y2="50" stroke="lightblue" stroke-dasharray="5, 5"/>
+<line x1="300" y1="200" x2="300" y2="50" stroke="lightblue" stroke-dasharray="5, 5"/>
+<line x1="200" y1="50" x2="300" y2="50" stroke="lightblue" stroke-dasharray="5, 5"/>
+<circle cx="300" cy="50" r="10" fill="lightblue"/>					
+<circle cx="200" cy="200" r="180" fill="none" stroke="lightgreen"/>					
+<path fill="lightgreen"	d="M 200 200 L 260 200 A 60 60 0 0 0 240 140"/>			
+</svg>	
+
+				</script>
+				</section>	
+				
+
+				<section id ="polar" data-markdown >
+
+				<script type="text/template">
+### Polar Coordinates
+
+$$ \theta = \mbox{tan}^{-1} \frac{y}{x} $$
+
+$$ r = \sqrt{x^2 + y^2} $$
+
+		float theta = atan(st.y, st.x);
+		float mag = length(st);
+						
+<center>
+<svg width = "400" height="400">
+<circle cx = "200" cy="200" r="50" fill="none" stroke="red" stroke-width="3"/>
+<circle cx = "200" cy="200" r="100" fill="none" stroke="red" stroke-width="3"/>
+<circle cx = "200" cy="200" r="150" fill="none" stroke="red" stroke-width="5"/>
+<line x1="0" y1="200" x2="400" y2="200" stroke="red" stroke-width="5"/>
+<line x1="200" y1="0" x2="200" y2="400" stroke="red" stroke-width="5"/>
+<line x1="200" y1="200" x2="300" y2="50" stroke="lightblue" stroke-dasharray="5, 5"/>
+<circle cx="300" cy="50" r="10" fill="lightblue"/>				
+</svg>
+</center>
+				</script>
+				</section>
+
+	
+				<section>
+
+				<section data-markdown>
+				<script type="text/template">
+				### Defining a Shape with Polar Coordinates
+
+				$$r^2=\mbox{cos}\theta^{2} + \mbox{sin}\theta^{2}$$
+
+					float f = pow(cos(theta),2) + pow(sin(theta),2);
+					float v = step(f, pow(mag,2));
+					vec3 color = vec3(v);
+				</script>
+				</section>
+
+				<section>
+				<canvas class="glslCanvas" data-fragment="
+
+				#ifdef GL_ES
+				precision mediump float;
+				#endif
+
+
+				uniform vec2 u_resolution;
+				uniform vec2 u_mouse;
+				uniform float u_time;
+
+				//magnitude and phase
+				vec2 polar(vec2 v){
+					return vec2( dot(v,v), atan(v.y, v.x) );
+				}
+
+				float func(vec2 st){
+
+					vec2 p = polar(st);
+					return step(( pow(cos(p.y*(5.+sin(u_time/2.))), 1.2) + pow(sin(p.t*(3.3+cos(u_time/3.))), 30.) ), pow(p.s,.9) ); 
+				}
+
+
+				void main(){
+					vec2 st = gl_FragCoord.xy/u_resolution.xy;
+					st = st*2.-1.;
+					vec3 color = vec3(func(st));
+					gl_FragColor = vec4( color, 1.);
+				}
+
+				"
+				width="800" height="400"> </canvas> 
+				</section>
+
+				<section data-markdown>
+				<script type="text/template">
+				### The Superformula 
+				#### (see [Paul Bourke's site](http://paulbourke.net/geometry/supershape/))
+
+				$$ \frac{1}{r}=(\lvert \frac{1}{a}\mbox{cos}(\frac{m}{4} \theta) \rvert^{n_2} + \lvert \frac{1}{b}\mbox{sin}(\frac{m}{4} \theta) \rvert^{n_3})^{\frac{1}{n_1}}$$
+				</script>
+				</section>
+
+
+				</section>
+
+				
+			</div>
+
+		</div>
+
+
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				math: {
+				    mathjax: 'https://cdn.mathjax.org/mathjax/latest/MathJax.js',
+				    config: 'TeX-AMS_HTML-full'  // See http://docs.mathjax.org/en/latest/config-files.html
+				},
+
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: '../plugin/math/math.js', async: true },
+					{ src: '../plugin/markdown/marked.js' },
+					{ src: '../plugin/markdown/markdown.js' },
+					{ src: '../plugin/notes/notes.js', async: true },
+					{ src: '../plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>

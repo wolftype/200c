@@ -1,0 +1,51 @@
+			<section data-markdown>
+				<script type="text/template">
+				### The 2D Dot Product
+				$$ a \cdot b = a.x \cdot b.x + a.y \cdot b.y $$
+				</script>
+				</section>
+
+				<section data-markdown>
+				<script type="text/template">
+				### Matrix Transformations
+				#### Dot each row with each column
+				$$\begin{bmatrix}
+						a & b \\\
+						c & d \\
+				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} ax + by \\\ cx + dy \end{bmatrix}$$
+
+
+				</script>
+				</section>
+
+				<section data-markdown>
+				<script type="text/template">
+				### Matrix Transformations: Rotation
+				$$\begin{bmatrix}
+						\mbox{cos}\theta & -\mbox{sin}\theta \\\
+						\mbox{sin}\theta & \mbox{cos}\theta \\
+				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} x \mbox{cos}\theta - y \mbox{sin}\theta \\\ x \mbox{sin}\theta + y\mbox{cos}\theta \end{bmatrix}$$
+				</script>
+				</section>
+
+				<section data-markdown>
+				<script type="text/template">
+				### Complex Numbers
+
+				$$ z=a+ib $$
+				$$ (a+ib)(c+id)=ac-bd + i(ad+bc)$$
+
+					vec2 mult(vec2 v1, vec2 v2){
+						return vec2(v1.x *v2.x - v1.y*v2.y, v1.x*v2.y + v1.y*v2.x);
+					}
+				</script>
+				</section>								
+				<section data-markdown>
+				<script type="text/template">
+				### Creating Fractals From Complex Numbers
+
+				$$ z_{n+1}=z_n^2+c $$
+				
+
+				</script>
+				</section>	

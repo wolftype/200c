@@ -13,7 +13,7 @@ b) quaternion
 d) impossible
 
 
-Quaternions in 3D graphics are primarly used for:
+Quaternions in 3D graphics are primarily used for:
 
 a) scaling
 b) translating
