@@ -1,10 +1,228 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Transformations</title>
+
+		<link rel="stylesheet" href="../css/reveal.css">
+		<link rel="stylesheet" href="../css/theme/black.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../css/print/pdf.css' : '../css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+	</head>
+	<body>
+		<script src="../lib/js/head.min.js"></script>
+		<script src="../js/reveal.js"></script>
+		<script type="text/javascript" src="https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/build/GlslCanvas.js"></script>
+		<div class="reveal">
+			<div class="slides">
+			<section>
+			<section data-markdown>
+
+<script type="text/template">
+### The Vertex Shader
+#### Transform incoming vertex information
+
+  	attribute vec3 position;
+
+  	uniform mat4 model;
+  	uniform mat4 view;
+  	uniform mat4 projection; 
+
+  	void main(void) {
+    	gl_Position = projection * view * model * vec4(position, 1.0);
+  	}
+
+</script>
+			</section>
+
+			<section data-markdown>
+<script type="text/template">
+### The Vertex Shader
+
+* Attributes must be used in program to be active
+	
+		attribute vec3 position;
+		
+		attribute vec2 uv;
+		varying vuv;
+
+		void main(){
+			vuv = uv;
+			gl_Position = position;
+		}
+
+* Pass `varying vec2 uv` coordinates through to fragment shader instead of `gl_FragCoord`
+
+</script>
+			</section>
+
+			</section>
+
 			<section data-markdown>
 				<script type="text/template">
-				### The 2D Dot Product
-				$$ a \cdot b = a.x \cdot b.x + a.y \cdot b.y $$
-				</script>
-				</section>
+				### Encoding Frames of Reference
+				#### 3D Euclidean **basis** 
 
+					vec3 v = vec3(a1,a2,a3);
+
+				$$ \boldsymbol{a}= a_1e_1 + a_2e_2 + a_3e_3 $$
+
+				<img src="basis_01.jpg" width="200"\>
+
+				`$$ \begin{eqnarray} e_ie_i = e_{ii} = 1 \cr
+					e_ie_j = e_{ij} = -e_{ji} \cr
+					e_{ij}e_{ij}=e_{ijij} = -e_{iijj} = -1
+					\end{eqnarray} $$`
+				</script>
+			</section>
+
+			<section>
+			<section data-markdown>
+				<script type="text/template">
+				### The Length (**norm**) of a Vector
+				#### To Normalize, Divide by Norm
+
+				$$ a = \\{a_1, a_2, ..., a_n \\} $$
+
+				$$ \Vert a \Vert = \sqrt{\sum_{i=1}^{n}a_i^2} $$
+
+				$$ \hat{a} = \frac{a}{\Vert a \Vert } $$
+
+					float len = sqrt( a.x * a.x + a.y * a.y + a.z * a.z);
+					vec3 unit = a / len; // equal to calling normalize(a)
+
+				</script>
+			</section>
+
+			<section data-markdown>
+				<script type="text/template">
+				### The Dot Product of two Vectors
+
+				$$ a = \\{a_1, a_2, ..., a_n \\} $$
+				$$ b = \\{b_1, b_2, ..., b_n \\} $$
+
+				$$ a \cdot b = \sum_{i=1}^{n}a_ib_i $$
+
+					float sqnorm = dot(a,a);
+
+				</script>
+			</section>
+			<section data-markdown>
+				<script type="text/template">
+				### The 2D Dot (**inner**) Product
+
+				$$ a = \\{a_1, a_2 \\} $$
+				$$ b = \\{b_1, b_2 \\} $$
+				$$ a \cdot b = a_1b_1 + a_2b_2 = \Vert a \Vert \Vert b \Vert \mbox{cos} \theta $$
+
+					float theta = acos( dot( normalize(a), normalize(b) );
+
+				</script>
+			</section>
+
+			<section data-markdown>
+				<script type="text/template">
+				### The 3D Dot (**inner**) Product
+				$$ a \cdot b = a_1b_1 + a_2b_2 + a_3b_3 = \Vert a \Vert \Vert b \Vert \mbox{cos} \theta $$
+
+					float theta = acos( dot( normalize(a), normalize(b) ));
+
+				</script>
+			</section>
+
+			<section data-markdown>
+				<script type="text/template">
+				### The 3D Cross Product
+				$$ \begin{eqnarray}\boldsymbol{a} \times \boldsymbol{b} = \\{a_2b_3 - a_3b_2, \cr
+				a_3b_1 - a_1b_3, \cr
+				a_1b_2 - b_1a_2 \\} \cr
+				= \Vert a \Vert \Vert b \Vert \mbox{sin} \theta \hat{\boldsymbol{n}} \end{eqnarray} $$
+
+					float theta = asin( length( cross( normalize(a), normalize(b) ));
+
+				</script>
+			</section>
+
+			<section data-markdown>
+				<script type="text/template">
+				### The Geometric Product of two Vectors
+				#### A Distributive Multiplication
+
+				$$ \boldsymbol{a} = \\{a_1e_1, a_2e_2, ..., a_ne_n \\} $$
+				$$ \boldsymbol{b} = \\{b_1e_1, b_2e_2, ..., b_me_m \\} $$
+
+				`$$ \boldsymbol{ab} = \sum_{i=1}^{n} \sum_{j=1}^{m} a_i e_i b_j e_j  $$`
+
+
+				</script>
+			</section>
+			<section data-markdown>
+			<script type = "text/template">
+			### The Geometric Product of two 2D Vectors
+			#### A Distributive Multiplication
+
+			$$ \boldsymbol{a} = a_1e_1 + a_2e_2 $$
+			$$ \boldsymbol{b} = b_1e_1 + b_2e_2 $$
+
+			`$$ \begin{split} \boldsymbol{ab} & = a_{1}e_{1}b_{1}e_{1} + a_{1}e_{1}b_{2}e_{2} + a_2e_2b_1e_1 + a_2e_2b_2e_2 \cr
+			& = a_1b_1e_{11} + a_2b_2e_{22} + a_1b_2e_{12} + a_2b_1e_{21} \cr
+			& = a_1b_1 + a_2b_2 + a_1b_2e_{12} - a_2b_1e_{12} \cr
+			& = a_1b_1 + a_2b_2 + (a_1b_2 - a_2b_1)e_{12} \end{split}  $$`
+			
+			</script>
+			</section>
+
+			<section data-markdown>
+				<script type="text/template">
+				### The Geometric Product of two 3D Vectors
+				#### A Distributive Multiplication
+
+				$$ \boldsymbol{a} = a_1e_1 + a_2e_2 + a_3e_3  $$
+				$$ \boldsymbol{b} = b_1e_1 + b_2e_2 + b_3e_3  $$
+
+				`$$ \begin{eqnarray} \boldsymbol{ab} = a_{1}b_{1}e_{11} + a_1b_2e_{12} +  a_1b_3e_{13} + \cr
+				a_2b_1e_{21} + a_2b_2e_{22} + a_2b_3e_{23} + \cr
+				a_3b_1e_{31} + a_3b_2e_{32} + a_3b_3e_{33} 
+				\end{eqnarray} $$`
+
+
+				</script>
+			</section>	
+			<section data-markdown>
+				<script type="text/template">
+				### The Geometric Product of two 3D Vectors
+				#### Contains both Inner and Outer Products
+
+				$$ \boldsymbol{a} = \\{a_1e_1, a_2e_2,a_3e_3 \\} $$
+				$$ \boldsymbol{b} = \\{b_1e_1, b_2e_2,b_3e_3 \\} $$
+
+				`$$ \begin{eqnarray} \boldsymbol{ab} = a_{1}b_{1} + a_2b_2 + a_3b_3 + \cr
+			    a_1b_2e_{12} - a_2b_1e_{12} + \cr
+				a_1b_3e_{13} - a_3b_1e_{13} + \cr
+				a_2b_3e_{23} - a_3b_2e_{23} \cr
+				= \boldsymbol{a} \cdot \boldsymbol{b} + \boldsymbol{a} \wedge \boldsymbol{b}
+				\end{eqnarray} $$`
+
+
+				</script>
+			</section>	
+
+			</section>
+
+				<section>
 				<section data-markdown>
 				<script type="text/template">
 				### Matrix Transformations
@@ -12,12 +230,32 @@
 				$$\begin{bmatrix}
 						a & b \\\
 						c & d \\
-				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} ax + by \\\ cx + dy \end{bmatrix}$$
-
-
+				\end{bmatrix} \cdot \begin{bmatrix} e \\\ f \end{bmatrix} = \begin{bmatrix} ae + bf \\\ ce + df \end{bmatrix}$$
 				</script>
 				</section>
 
+				<section data-markdown>
+				<script type="text/template">
+				### Matrix Transformations: Scale
+				#### Dot each row with each column
+				$$\begin{bmatrix}
+						s_x & 0 \\\
+						0 & s_y \\
+				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} s_xx \\\ s_yy \end{bmatrix}$$
+				</script>
+				</section>
+
+				<section data-markdown>
+				<script type="text/template">
+				### Matrix Transformations: Translate
+				#### Dot each row with each column
+				$$\begin{bmatrix}
+						1 & 0 & t_x \\\
+						0 & 1 & t_y \\\
+						0 & 0 & 1
+				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y  \\\ 1 \end{bmatrix} = \begin{bmatrix} x + t_x \\\ y + t_y \\\ 1 \end{bmatrix}$$
+				</script>
+				</section>
 				<section data-markdown>
 				<script type="text/template">
 				### Matrix Transformations: Rotation
@@ -27,19 +265,57 @@
 				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} x \mbox{cos}\theta - y \mbox{sin}\theta \\\ x \mbox{sin}\theta + y\mbox{cos}\theta \end{bmatrix}$$
 				</script>
 				</section>
+				</section>
+				<section>
 
-				<section data-markdown>
-				<script type="text/template">
-				### Complex Numbers
+					<section data-markdown>
+					<script type="text/template">
+					### Complex Numbers
 
-				$$ z=a+ib $$
-				$$ (a+ib)(c+id)=ac-bd + i(ad+bc)$$
+					$$ z=a+ib $$
+					$$ (a+ib)(c+id)=ac-bd + i(ad+bc)$$
 
-					vec2 mult(vec2 v1, vec2 v2){
-						return vec2(v1.x *v2.x - v1.y*v2.y, v1.x*v2.y + v1.y*v2.x);
-					}
-				</script>
-				</section>								
+						vec2 mult( vec2 v1, vec2 v2){
+							return vec2(v1.x *v2.x - v1.y*v2.y, v1.x*v2.y + v1.y*v2.x);
+						}
+					</script>
+					</section>								
+
+					<section data-markdown>
+					<script type="text/template">
+					### Complex Numbers
+
+					$$ (a+ib)(c+id)=ac-bd + i(ad+bc)$$
+					$$ (\mbox{cos}\theta+i\mbox{sin}\theta)(x+iy)=
+					x\mbox{cos}\theta-y\mbox{sin}\theta + i(y\mbox{cos}\theta+x\mbox{sin}\theta)$$
+
+						vec2 rot( vec2 v1, theta){
+							return mult( vec2(cos(theta), sin(theta)), v1 );
+						}
+					</script>
+					</section>
+					<section data-markdown>
+					<script type="text/template">
+					### Complex Numbers
+					#### The Exponential Form
+
+					$$ e^{i\theta}=\mbox{cos}\theta+\mbox{sin}\theta$$
+					$$ re^{i\theta}=r(\mbox{cos}\theta+\mbox{sin}\theta)$$
+					$$ (re^{i\theta})^{n}=r^{n}e^{ni\theta} =r^{n}(\mbox{cos}(n\theta)+\mbox{sin}(n\theta)) $$
+					</script>
+					</section>	
+
+					<section data-markdown>
+					<script type="text/template">
+					### Complex Numbers
+					#### Rotors in 2D Euclidean Geometric Algebra
+
+					 `$$ (a + be_{12})(c + de_{12}) = ac - bd + (ad+bc)e_{12} $$`
+
+					</script>
+					</section>	
+
+				</section>
 				<section data-markdown>
 				<script type="text/template">
 				### Creating Fractals From Complex Numbers
@@ -49,3 +325,106 @@
 
 				</script>
 				</section>	
+				<section>
+				<section data-markdown>
+				### Quaternions
+				#### Like Complex Numbers, but for 3D
+
+				$$ q = e^{B\theta}=\mbox{cos}\theta+B\mbox{sin}\theta $$
+				$$ B = ix + jy + kz $$
+				$$ i^2 = j^2 = k^2 = ijk = -1 $$
+				$$ ij = -ji = k $$
+				$$ jk = -kj = i $$
+				$$ ki = -ik = j $$
+				</section>
+				<section data-markdown>
+				<script type="text/template">
+				### Quaternions
+				#### Like Complex Numbers, but for 3D
+
+				<img src = "quat.jpg" width="300"/>
+				$$q=\mbox{cos}\frac{\theta}{2}+\mbox{sin}\frac{\theta}{2}\hat{v}$$
+				$$x^{'}=qx\tilde{q}$$
+				</script>
+				</section>
+
+				<section data-markdown>
+				<script type="text/template">
+				### Quaternions
+				#### Like Complex Numbers, but for 3D
+
+				$$\begin{eqnarray} (w_1 + i x_1 + j y_1 + k z_1 )( w_2 + ix_2 + jy_2+ kz_2 ) = \cr
+					w_1w_2 - x_1x_2 -y_1y_2 -z_1z_2 + \cr
+					i(w_1x_2+x_1w_2 +y_1z_2 - y_2z_1) + \cr
+					j(w_1y_2+y_1w_2 +z_1x_2 - x_1z_2) + \cr
+					k(w_1z_2+z_2w_2 +x_1y_2 -y_1x_2)
+				\end{eqnarray}$$
+				</script>
+				</section>
+
+				<section data-markdown>
+				<script type="text/template">
+				### Quaternions
+				#### ~ Rotors in 3D Euclidean Geometric Algebra
+
+				`$$\begin{eqnarray} (a_0 + a_{12}e_{12} + a_{13}e_{13} + a_{23}e_{23} )(b_0 + b_{12}e_{12} + b_{13}e_{13} + b_{23}e_{23} ) = \cr
+					a_0b_0 - a_{12}b_{12} - a_{13}b_{13} - a_{23}b_{23} + \cr
+					(a_0b_{12} + a_{12}b_0 - a_{13}b_{23} + a_{23}b_{13})e_{12} + \cr
+					(a_0b_{13} + a_{13}b_0 + a_{12}b_{23} - a_{23}b_{12})e_{13} + \cr
+					(a_0b_{23} + a_{23}b_0 - a_{12}b_{13} + a_{13}b_{12})e_{23}
+				\end{eqnarray}$$`
+				</script>
+				</section>
+
+				<section data-markdown>
+				<script type "text/template">
+				### Quaternions to Matrix
+				$$A_{rotation} = \begin{bmatrix}	
+							  1-(y^2+z^2) & xy+wz    & xz-wy    & 0 \\\
+							  xy-wz	    & 1-(x^2+z^2)& yz+wx    & 0 \\\
+							  xz+wy     & yz-wx    & 1-(x^2+y^2)& 0 \\\
+							  0		    & 0		   & 0          & 1 
+				\end{bmatrix}$$
+				</script>
+				</section>
+
+				</section>	
+
+				<section data-markdown>
+				<script type "text/template">
+				### Encoding Frames of Reference (e.g. "Pose")
+				* **position**: A 3D Vector 
+				* **rotation**: A Quaternion
+				* **scale**: A 3D Vector (scale in each direction) 
+				</script>
+				</section>						
+
+			</div>
+
+		</div>
+
+
+
+		<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				math: {
+				    mathjax: 'https://cdn.mathjax.org/mathjax/latest/MathJax.js',
+				    config: 'TeX-AMS_HTML-full'  // See http://docs.mathjax.org/en/latest/config-files.html
+				},
+
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: '../plugin/math/math.js', async: true },
+					{ src: '../plugin/markdown/marked.js' },
+					{ src: '../plugin/markdown/markdown.js' },
+					{ src: '../plugin/notes/notes.js', async: true },
+					{ src: '../plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+	</body>
+</html>					

@@ -3,51 +3,12 @@
 
 <script type="text/javascript">
 
-//ANIMATION FUNCTION (to be passed a callback)  see also http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/
-window.requestAnimFrame = ( function() {
-   
-    return  window.requestAnimationFrame || 
-            window.webkitRequestAnimationFrame ||  
-            window.mozRequestAnimationFrame || 
-            window.oRequestAnimationFrame || 
-            window.msRequestAnimationFrame ||
-    
-    // if none of the above, use non-native timeout method
-    function(callback) {
-      window.setTimeout(callback, 1000 / 60);
-    };
-  
-  } ) (); 
 
-
-function animate(){
-  // feedback loop requests new frame
-  requestAnimFrame( animate );
-  render(); //defined below
-}
-
-function start() {
-  init();
-  animate();
-}
-
-var scene;
-var timer = 0;
 var box;
+var app = new GFX.App();
 
-/// This happens once
-function init(){
-
-  //This defines a new global variable "GL"
-  GFX.InitContext( document.getElementById("glcanvas") );
-  
-  var vertScript = document.getElementById("vertScript").text;
-  var fragScript = document.getElementById("fragScript").text;
-
-  scene = new GFX.Scene();
-
-  scene.shader.program( vertScript, fragScript );
-
+/// On Initialization of the WebGL Application (this happens once)
+app.onInit = function(){
 
   var vertices = new Float32Array( [
     -1.0, -1.0, -1.0,
@@ -71,6 +32,17 @@ function init(){
     1.0,1.0,1.0
   ]);  
 
+  var texCoord = new Float32Array([
+    0.0, 0.0,
+    0.0, 1.0,
+    1.0, 1.0,
+    1.0, 0.0, 
+    1.0, 0.0,
+    1.0, 1.0,
+    0.0, 1.0,
+    0.0, 0.0,   
+  ]);  
+
   var indices = new Uint16Array([
     0,1,3,2,7,6,4,5,0,1
   ]);
@@ -78,17 +50,22 @@ function init(){
   //Create and Bind two new array buffers and a new element array buffer
   box = new GFX.Mesh();
 
-  //Allocate Some Data on the GPU and copy data over
+  //Allocate Some Data on the GPU and copy position data over
   box.vertexBuffer.bind();
   box.vertexBuffer.alloc( vertices.byteLength );
   box.vertexBuffer.data(vertices);
 
-  //Allocate Some Data on the GPU and copy data over
+  //Allocate Some Data on the GPU and copy color data over
   box.colorBuffer.bind();
   box.colorBuffer.alloc( colors.byteLength );
   box.colorBuffer.data(colors);
 
-  //Allocate Some Data on the GPU and copy data over
+  //Allocate Some Data on the GPU and copy color data over
+  box.texBuffer.bind();
+  box.texBuffer.alloc( texCoord.byteLength );
+  box.texBuffer.data(texCoord);
+
+  //Allocate Some Data on the GPU and copy index data over
   box.indexBuffer.bind();
   box.indexBuffer.alloc( indices.byteLength );
   box.indexBuffer.data(indices);
@@ -96,24 +73,27 @@ function init(){
 
 
 // Render the scene
-function render() {
+app.onRender = function() {
 
-  timer = timer +1;
+  var scene = this.scene;
 
-  scene.camera.frame.rotateY( Math.sin( timer / 180.0) * Math.PI / 10  );
+  scene.camera.frame.rotateY( Math.sin( scene.time / 180.0) * Math.PI / 10  );
 
-  //begin scene render
+  //begin scene render, send matrices over to shader uniform
   scene.begin();
 
+    //enable attributes in shader
     scene.shader.enableAttribute( "position" );
     scene.shader.enableAttribute( "color" );
-    
+    scene.shader.enableAttribute( "uv" );
+
     //Send Time Variable over to GPU
-    scene.shader.setUniformFloat("uTime", 3.14 * timer / 180.0)
+    scene.shader.setUniformFloat("u_time", 3.14 * scene.time / 180.0)
+
+    box.frame.rotateX( Math.PI * scene.time/180.0 );
+    box.frame.scale.x = Math.sin( scene.time/180.0 );
 
     //upload model matrix
-    box.frame.rotateX( Math.PI * timer/180.0 );
-    box.frame.scale.x = Math.sin( timer/180.0 );
     box.updateModel(scene.shader)
 
     //Bind Vertex Buffer
@@ -126,6 +106,11 @@ function render() {
     //Point Buffer to Attribute in Shader
     scene.shader.pointAttribute("color", 3)
 
+    //Bind TexCoord Buffer
+    box.texBuffer.bind();
+    //Point Buffer to Attribute in Shader
+    scene.shader.pointAttribute("uv", 2)
+
     //Bind Index Buffer
     box.indexBuffer.bind();
     //Draw the 10 indices
@@ -137,7 +122,7 @@ function render() {
 </script>
 
 <!-- VERTEX SHADER -->
-<script id="vertScript" type="text/glsl">
+<script id="gfxvert" type="text/glsl">
 
   #ifdef GL_ES
   precision lowp float;
@@ -145,36 +130,44 @@ function render() {
 
   attribute vec3 position;      //Position
   attribute vec3 color;         //Color
+  attribute vec2 uv;            //Texture;
 
   uniform mat4 model;           //Model Matrix
   uniform mat4 view;            //View Matrix
   uniform mat4 projection;      //Projection Matrix
 
-  varying vec3 vcolor;     //Color to output to fragment shader
+  varying vec3 vcolor;          //Color to output to fragment shader
+  varying vec2 vuv;             //Texture Coordiante to Output to Fragment Shader
 
   void main(void) {
+    vuv = uv;
     vcolor = color;
     gl_Position = projection * view * model * vec4(position, 1.0);
   }
 </script>
 
+
 <!-- FRAGMENT SHADER -->
-<script id="fragScript" type="text/glsl">
+<script id="gfxfrag" type="text/glsl">
 
   #ifdef GL_ES
   precision lowp float;
   #endif
 
-  uniform float uTime;  
-  varying vec3 vcolor;           //Color from vertex shader
+  uniform float u_time;
+
+  varying vec3 vcolor;
+  varying vec2 vuv;
 
   void main(void) {
-    gl_FragColor = vec4(vcolor,1.0);
+    vec2 st = vuv;
+    vec3 color = vec3(st.x, 0., st.y );//vcolor * sin(u_time);
+    gl_FragColor = vec4(color,1.0);
   }
 </script>
 
-<body onload=start()>
-<canvas id="glcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
+<body onload=app.start()>
+<canvas id="gfxcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
 
 </body>
 </html>

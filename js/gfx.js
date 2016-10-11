@@ -1,7 +1,55 @@
-/// The Simplest GL basics: Context, Vectors, Matrices, Quaternions, Frames, Scenes, Shaders
+/* The Simplest GL basics: Context, Vectors, Matrices, Quaternions, Frames, Scenes, Shaders
 
-var GL = GL || {}
+   How to use: 
+
+  		<html>
+  		<script src = "http://github.com/wolftype/gfx.js/gfx.js"></script>
+  		
+  		var app = new GFX.App();
+
+  		app.onInit() = function(){
+			//initialize GL objects and buffers
+  		}
+
+  		app.onRender() = function(){
+			//drawing routines
+  		}
+
+  		<script id = "gfxvert" type="text/glsl">
+			//VERTEX SHADER CODE
+  		</script>
+        <script id = "gfxfrag" type="text/glsl">
+			//FRAGMENT SHADER CODE
+        </script>
+  		
+  		<body onload = "app.start()">
+   		<canvas id = "gfxcanvas" width = "640" height = "480"</canvas>
+  		</body>
+  		</html>
+*/
+
+
+/// Main Object
 var GFX = GFX || { Version: 0.1 }
+/// GL variable to call GL.enable etc 
+var GL = GL || {}
+
+/// Global Animation Function (to be passed a callback in GFX.App)  see also http://www.paulirish.com/2011/requestanimationframe-for-smart-animating/
+var RequestAnimFrame = ( function() {
+
+	return  window.requestAnimationFrame || 
+        	window.webkitRequestAnimationFrame ||  
+        	window.mozRequestAnimationFrame || 
+        	window.oRequestAnimationFrame || 
+        	window.msRequestAnimationFrame ||
+
+	// if none of the above exist, use non-native timeout method
+	function(callback) {
+  		window.setTimeout(callback, 1000 / 60);
+	};
+
+	} ) (); 
+
 
 /// Create Graphics Context By Passing in ID of canvas in body -- @todo or adding one to DOM if doesn't exist
 GFX.InitContext = function( canvas ){
@@ -23,7 +71,9 @@ GFX.InitContext = function( canvas ){
     GL.depthFunc(GL.LEQUAL);
 
     console.log(GL)
+
 }
+
 
 /// 3D Vector Operations
 GFX.Vector = function(x,y,z){
@@ -426,7 +476,7 @@ GFX.Quaternion.prototype = {
 		return new GFX.Quaternion(this.w, -this.x, -this.y, -this.z);
 	},
 	
-	
+	/// Multiply two quaternions together
 	mult: function(q){
 		return new GFX.Quaternion(	this.w * q.w - this.x * q.x - this.y * q.y - this.z * q.z,
         			    			this.w * q.x + this.x * q.w + this.y * q.z - this.z * q.y,
@@ -466,6 +516,7 @@ GFX.Quaternion.prototype = {
 	
 }
 
+/// A Frame has a 3D position, a 3D orientation, and a 3D Scale
 GFX.Frame = function(x,y,z){
 	this.position = new GFX.Vector(x,y,z);			///< A 3D Position
 	this.orientation =  new GFX.Quaternion(); 	    ///< A 3D Orientation
@@ -531,6 +582,7 @@ GFX.Frame.prototype = {
 
 };
 
+/// Camera has focallength, eye separation, and frame of reference
 GFX.Camera = function(){
 	this.focalLength = 100;						//parallax merge point
 	this.eyesep = .3;							//eye separation
@@ -543,6 +595,7 @@ GFX.Shader = function(){};
 GFX.Shader.prototype = {
 	constructor: GFX.Shader,
 
+	/// Create a new Shader Program, along with a vertex and fragment shader
 	create: function(){
 		console.log("shader creating ... ")
 		this.id = GL.createProgram();
@@ -551,12 +604,14 @@ GFX.Shader.prototype = {
 
 	},
 
+	/// Load vertex and fragment shader source code
 	load: function( vert, frag ){
 		console.log("shader loading ...");
 		GL.shaderSource(this.vertId, vert);
 		GL.shaderSource(this.fragId, frag);
 	},
 
+	/// Compile the vertex and fragment shaders, and check for errors
 	compile: function(){
 		console.log("shader compiling ...")
 		GL.compileShader( this.vertId );
@@ -566,6 +621,7 @@ GFX.Shader.prototype = {
 		this.checkCompilation( this.fragId);
 	},
 
+	/// Check for compiler errors
 	checkCompilation: function(id){
 		console.log("shader checking compilation ...")
 		if (!GL.getShaderParameter(id, GL.COMPILE_STATUS)) {  
@@ -575,6 +631,8 @@ GFX.Shader.prototype = {
   		}
 	},
 
+	/// Attach and link the two compiled vertex and fragment shaders
+	/// to the shader program, and check for errors
 	link: function(){
 		console.log("shader linking ... ")
 		GL.attachShader( this.id, this.vertId);
@@ -584,6 +642,7 @@ GFX.Shader.prototype = {
 		this.checkLinking();
 	}, 
 
+	/// Check for linking errors
 	checkLinking: function(){
 		console.log("shader checking linking ...")
   		if (!GL.getProgramParameter(this.id, GL.LINK_STATUS)) {
@@ -591,14 +650,12 @@ GFX.Shader.prototype = {
   		}
 	},
 
+	/// Bind the shader (all vertex data will now pass through it)
 	bind: function(){
 		GL.useProgram(this.id);
-	},
-
-	unbind: function(){
-		//GL.useProgram(0);
 	},	
 
+	/// Pass in vertex and fragment shader source code, compile, link, and bind the shader
 	program: function(vert, frag){
 		this.create();
 		this.load(vert,frag);
@@ -608,6 +665,7 @@ GFX.Shader.prototype = {
 		this.printActiveAttributes();
 	},
 
+	/// Print all attributes
 	printActiveAttributes: function(){
 		for (i = 0; i < GL.getProgramParameter(this.id, GL.ACTIVE_ATTRIBUTES); i++){
 			var name = GL.getActiveAttrib( this.id, i).name;
@@ -615,11 +673,13 @@ GFX.Shader.prototype = {
 		}
 	},
 
+	/// Set Uniform matrix4 variable on this shader (shader must have been bound with bind())
 	setUniformMatrix: function (name, value) {
   		var uID = GL.getUniformLocation(this.id, name);
   		GL.uniformMatrix4fv(uID, false, new Float32Array(value));
 	},
 
+	/// Set Uniform float variable on this shader (shader must have been bound with bind())
     setUniformFloat: function(name, value) {
   		var uID = GL.getUniformLocation(this.id, name);
   		GL.uniform1f(uID, value);
@@ -630,10 +690,12 @@ GFX.Shader.prototype = {
 		GL.enableVertexAttribArray( this.getAttribute(name) );
 	},
 
+	/// Get Location of Attribute in Shader
 	getAttribute: function(name){
 		return GL.getAttribLocation(this.id, name);
 	},
 
+	/// Point Bound Buffer data to Attribute 
 	/// Call after binding a GFX.Buffer 
 	/// note: some assumptions are made here for simplicity -- e.g. must be floats with no offset in data
 	pointAttribute: function(name, size){
@@ -652,39 +714,49 @@ GFX.Buffer = function(type){
 GFX.Buffer.prototype = {
 	constructor: GFX.Buffer,
 
+	/// Create Buffer ID
 	create: function(){
 		this.id = GL.createBuffer();
 	},
 
+	/// Bind The Buffer
 	bind: function(){
   		GL.bindBuffer(this.type, this.id );
 	},
 
+	/// Allocate Memory in Buffer
 	/// size: byteLength()
 	/// hint: GL.STATIC_DRAW, GL.DYNAMIC_DRAW or GL.STREAM_DRAW
 	alloc: function(size, hint){ 							
   		GL.bufferData(this.type, size, hint || GL.STATIC_DRAW);
 	},
 
+	/// Send Data into Buffer
 	data: function(data, offset){
 		var offset = offset || 0;
 		GL.bufferSubData(this.type, offset, data);
 	},
 
+	/// Draw Elements (indices into buffered data)
+	/// mode: GL.TRIANGLE_STRIP, GL.LINES, etc
+	/// num: number of elements to draw
 	drawElements: function(mode, num){
 		GL.drawElements( mode, num, GL.UNSIGNED_SHORT, 0);
 	},
 
+	/// Draw Arrays
 	drawArrays: function(mode, num){
 		GL.drawArrays( mode, 0, num)
 	},
 
 };
 
+/// Mesh has a frame and a bunch of buffers on the GPU
 GFX.Mesh = function(){
 	this.frame = new GFX.Frame();
 	this.vertexBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
 	this.colorBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
+	this.texBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
 	this.indexBuffer = new GFX.Buffer( GL.ELEMENT_ARRAY_BUFFER );
 };
 
@@ -698,7 +770,8 @@ GFX.Mesh.prototype = {
 	}
 };
 
-/// Scene to be created after GFX.Context() has defined a global GL context
+/// Scene: has width, height, background color, camera, shader, and time
+/// To be created after GFX.Context() has already defined a global GL context
 GFX.Scene = function(width, height){
 	
 	this.width = width || GL.canvas.width;			///< Width of Context in Pixels
@@ -706,7 +779,7 @@ GFX.Scene = function(width, height){
 	this.camera = new GFX.Camera();					///< View and Projection matrices
 	this.shader = new GFX.Shader();					///< Vertex and Fragment Shader
 	this.color = [1.0,0.0,0.0,1.0]; 				///< Background Color
-	this.time = 0;									///< Time to increment every render()
+	this.time = 0;									///< Time: will increment every onRender()
 
 };
 
@@ -714,14 +787,19 @@ GFX.Scene.prototype = {
 
 	constructor: GFX.Scene,
 
+	/// Clear Screen with color
 	clear: function( ){
     	GL.clearColor( this.color[0], this.color[1], this.color[2], this.color[3] );
 	    GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
     },
 	
+	/// Start Rendering Scene: 
+	/// 1 - bind shader
+	/// 2 - load identity model, set up shader's projection and view matrices
+	/// 3 - clear screen, and set viewport
 	begin: function(){
 		 
-		this.time += 10;
+		this.time += 2;
 
 	    //Model Matrix
 	    var model = GFX.Matrix.identity();
@@ -746,13 +824,48 @@ GFX.Scene.prototype = {
     	GL.viewport(0,0, this.width, this.height);	
 	},
 
+	/// Stop Rendering Scene
 	end: function(){
-		this.shader.unbind();
+		//this.shader.unbind();
 	}
-
-
-	
 }
+
+GFX.App = function(){
+
+}
+
+GFX.App.prototype = {
+
+	constructor: GFX.App,
+
+	/// Defaults to finding element called "gfxcanvas" "gfxvert" and "gfxfrag"
+	_init: function(){
+		GFX.InitContext( document.getElementById("gfxcanvas") );
+ 		var vertScript = document.getElementById("gfxvert").text;
+  		var fragScript = document.getElementById("gfxfrag").text;
+		this.scene = new GFX.Scene();
+  		this.scene.shader.program( vertScript, fragScript );
+		this.onInit();
+	},
+
+	/// User initialization of GL objects and buffers
+	onInit: function(){},
+
+	/// Called Repeatedly by Animate function
+	onRender: function(){},
+
+	/// Initialize and Begin 
+	start: function() {
+  		this._init();
+  		this.mainloop();
+ 	},
+
+ 	mainloop: function(){
+ 		RequestAnimFrame( this.mainloop.bind(this) ); //must bind function to this instance so it doesn't look in window's methods
+ 		this.onRender();
+ 	}
+}
+	
 
 
 

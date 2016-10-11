@@ -43,10 +43,16 @@ Now, with this function, let's take a look at a function in the book of shaders,
 		    vec2 f = fract(st); //a floating point number in the range [0,1)
 
 		    // Four corners in 2D of a tile
-		    float a = random(i);
-		    float b = random(i + vec2(1.0, 0.0));
-		    float c = random(i + vec2(0.0, 1.0));
-		    float d = random(i + vec2(1.0, 1.0));
+		    float a = random(i);				  //bottom left
+		    float b = random(i + vec2(1.0, 0.0)); //bottom right
+		    float c = random(i + vec2(0.0, 1.0)); //top left
+		    float d = random(i + vec2(1.0, 1.0)); //top right
+
+		    //  c ------ d
+		    //  | 		 |
+		    //  | 		 |
+		    //  | 		 |
+		    //  a--------b
 
 		    // Smooth Interpolation
 		    vec2 u = smoothstep(0.,1.,f);
@@ -65,19 +71,22 @@ We use `i` to calculate the pseudo random number at four fixed points on our gri
 Given two values $a$ and $b$ we can use the `mix` function to **linearly** interpolate between them:
 
 	{% highlight glsl %}
-	float value = mix(a,b,amt);
+	float linearMix = mix(a,b,amt);
 	{% endhighlight %}
 
-The `amt` is a typically a value from $[0,1]$ though it can be less than or greater.
+The `amt` is a typically a value from $[0,1]$ though it can be less than or greater.  Mix is calculated as `(1-amt)*a + amt*b`.  Note that in glsl code the variables `a` and `b` can be floating point numbers or vectors.
 
-If we have four values on the corners of a rectangle, we can use **bilinear** interpolation the find a value anywhere inside that rectangle:
+In the `noise` function, we use `u.x`, which is the smoothstepped fractional component in the $x$ direction.  Lets mix the bottom left an bottom corners of the grid, and then do the same with the top left and top right corners of the tile:
 
 	{% highlight glsl %}
-	float bilinear( float a, float b, float c, float d, vec2 pos){
-		float bottom = mix(a,b,pos.x);
-		float top = mix(c,d,pos.x)
-		return mix( bottom, top, pos.y);
-	}
+	float bottomMix = mix(a,b,u.x);
+	float topMix = mix(c,d,u.x);
 	{% endhighlight %}
 
-We mix the values along the bottom (a-b) and top (c-d) edges of the rectangle, and then mix those two mixed values.
+Finally, we can use **bilinear** interpolation the find a value anywhere inside that rectangle by mixing these two linear mixes, using `u.y`, which is the smoothstepped fractional component in the $y$ direction.
+
+	{% highlight glsl %}
+	float bilinearMix = mix(bottomMix, topMix, u.y);
+	{% endhighlight %}
+
+In summary, the `noise` function uses smoothstep to mix random values along the bottom (a-b) and top (c-d) edges of a rectangle, and then mixes those two mixed values.
