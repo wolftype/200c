@@ -1,9 +1,12 @@
-/* The Simplest GL basics: Context, Vectors, Matrices, Quaternions, Frames, Scenes, Shaders
+/*  author: wolftype
+    license: MIT
+
+   Core GL Code: Context, Vectors, Matrices, Quaternions, Frames, Scenes, Shaders
 
    How to use: 
 
   		<html>
-  		<script src = "http://github.com/wolftype/gfx.js/gfx.js"></script>
+  		<script src = "http://rawgit.com/wolftype/gh-pages/js/gfx.js"></script>
   		
   		var app = new GFX.App();
 
@@ -333,6 +336,7 @@ GFX.Matrix.prototype = {
 
 /// Static Matrix Methods
 
+/// Identity Matrix
 GFX.Matrix.identity = function(){
 	return new GFX.Matrix([
 		1, 0, 0, 0,
@@ -342,6 +346,7 @@ GFX.Matrix.identity = function(){
 	]);
 };
 
+/// Translation Matrix
 GFX.Matrix.translation = function(tx,ty,tz){
 	return new GFX.Matrix([
 		1, 0, 0, tx,
@@ -351,6 +356,7 @@ GFX.Matrix.translation = function(tx,ty,tz){
 	]);
 };
 
+/// Scale Matrix
 GFX.Matrix.scale = function(sx,sy,sz){
 	return new GFX.Matrix([
 		sx, 0, 0, 0,
@@ -360,7 +366,7 @@ GFX.Matrix.scale = function(sx,sy,sz){
 	]);
 };
 
-	//symmetrical frustum -- feed in fovy in degrees
+/// Symmetrical Frustum -- feed in field-of-view in degrees
 GFX.Matrix.perspective = function(fovy, ratio, near, far){
 		var f = 1.0/ Math.tan(fovy*Math.PI/360.0);  // n/t
 		var a = f/ratio;				 				  // (n/t)/(r/t)=n/r	
@@ -376,7 +382,7 @@ GFX.Matrix.perspective = function(fovy, ratio, near, far){
 		]);
 	};
 
-	//general frustum (can be assymetric -- needed for stereoscopic rendering)
+/// General frustum (can be assymetric)
 GFX.Matrix.frustum = function(l,r,t,b,near,far){
 		return new GFX.Matrix([
 			2*near/(r-l), 	0, 			  -(r+l)/(r-l), 				  0,
@@ -386,8 +392,8 @@ GFX.Matrix.frustum = function(l,r,t,b,near,far){
 		]);
 	};
 
-	//stereoscopic frustums are asymmetric -- see Paul Bourke's site
-	//right camera shifts frustum left, left camera shifts frustum right
+/// stereoscopic frustums are asymmetric -- see Paul Bourke's site
+/// right camera shifts frustum left, left camera shifts frustum right
 GFX.Matrix.stereoPerspective = function(fovy, ratio, near, far, offset, focal){
 
 		var tn = Math.tan(fovy*Math.PI/360.0);   //top/near
@@ -409,11 +415,11 @@ GFX.Matrix.stereoPerspective = function(fovy, ratio, near, far, offset, focal){
 
 	};
 
-	//lookat (right-handed coordinates)
+/// lookat (right-handed coordinates)
 GFX.Matrix.lookAt = function(eye,target,up){
-		var z = (eye.sub(target)).unit(); // direction vector
-		var x = (up.cross(z)).unit();  // right vector
-		var y = z.cross(x);			   // modded up vector
+		var z = (eye.sub(target)).unit(); // negative direction vector
+		var x = (up.cross(z)).unit();     // right vector
+		var y = z.cross(x);			      // modded up vector
 		return new GFX.Matrix([
 			x.x, x.y, x.z, -(x.dot(eye)),
 			y.x, y.y, y.z, -(y.dot(eye)),
@@ -519,49 +525,49 @@ GFX.Quaternion.prototype = {
 /// A Frame has a 3D position, a 3D orientation, and a 3D Scale
 GFX.Frame = function(x,y,z){
 	this.position = new GFX.Vector(x,y,z);			///< A 3D Position
-	this.orientation =  new GFX.Quaternion(); 	    ///< A 3D Orientation
+	this.rotation =  new GFX.Quaternion(); 	        ///< A 3D Orientation
 	this.scale = new GFX.Vector(1,1,1); 			///< A 3D Vector
 };
 
 GFX.Frame.prototype = {
 	constructor: GFX.Frame,
 
-	/// equivalent to this.orientation.apply( new GFX.Vector(1,0,0) 
+	/// equivalent to this.rotation.apply( new GFX.Vector(1,0,0) 
 	x: function(){
-		var q = this.orientation;
+		var q = this.rotation;
 		return new GFX.Vector( 1-(2*(q.y*q.y + q.z*q.z)), 2*(q.x*q.y + q.w*q.z), 2*(q.x*q.z - q.w*q.y) );
 	},
 
-	/// equivalent to this.orientation.apply( new GFX.Vector(0,1,0) 
+	/// equivalent to this.rotation.apply( new GFX.Vector(0,1,0) 
 	y: function(){
-		var q = this.orientation;		
+		var q = this.rotation;		
 		return new GFX.Vector( 2*(q.x*q.y - q.w*q.z), 1-(2*(q.x*q.x + q.z*q.z)), 2*(q.y*q.z+q.w*q.x) );
 	},
 
-	/// equivalent to this.orientation.apply( new GFX.Vector(0,0,1) )
+	/// equivalent to this.rotation.apply( new GFX.Vector(0,0,1) )
 	z: function(){
-		var q = this.orientation;		
+		var q = this.rotation;		
 		return new GFX.Vector( 2*(q.x*q.z + q.w*q.y), 2*(q.y*q.z-q.w*q.x), 1-(2*(q.x*q.x + q.y*q.y)) );
 	},
 
 	//pitch
 	rotateX: function(rad){
-		this.orientation.setAxisAngle( this.x(), rad );
+		this.rotation.setAxisAngle( this.x(), rad );
 	},
 
 	//yaw
 	rotateY: function(rad){
-		this.orientation.setAxisAngle( this.y(), rad );
+		this.rotation.setAxisAngle( this.y(), rad );
 	},
 
 	//roll
 	rotateZ: function(rad){
-		this.orientation.setAxisAngle( this.z(), rad );
+		this.rotation.setAxisAngle( this.z(), rad );
 	},
 
 	//matrix representation
 	matrix: function(){
-		var rmat = this.orientation.matrix();
+		var rmat = this.rotation.matrix();
 		var r = rmat.val;
 		var s = this.scale;
 		var t = this.position;
@@ -653,6 +659,11 @@ GFX.Shader.prototype = {
 	/// Bind the shader (all vertex data will now pass through it)
 	bind: function(){
 		GL.useProgram(this.id);
+	},	
+
+	/// Bind the shader (all vertex data will now pass through it)
+	unbind: function(){
+		GL.useProgram(null);
 	},	
 
 	/// Pass in vertex and fragment shader source code, compile, link, and bind the shader
@@ -764,9 +775,9 @@ GFX.Mesh.prototype = {
 	constructor: GFX.Mesh,
 
 	/// Bind current objects model matrix to shader uniform
-	updateModel: function(shader){
+	uploadModel: function(shader){
 		var tmp = this.frame.matrix().transpose();
-		shader.setUniformMatrix("model", tmp.val);//this.frame.matrix().transpose().val );
+		shader.setUniformMatrix("model", tmp.val);
 	}
 };
 
@@ -779,7 +790,7 @@ GFX.Scene = function(width, height){
 	this.camera = new GFX.Camera();					///< View and Projection matrices
 	this.shader = new GFX.Shader();					///< Vertex and Fragment Shader
 	this.color = [1.0,0.0,0.0,1.0]; 				///< Background Color
-	this.time = 0;									///< Time: will increment every onRender()
+	this.time = 0.0;							    ///< Time: will increment every onRender()
 
 };
 
@@ -799,7 +810,7 @@ GFX.Scene.prototype = {
 	/// 3 - clear screen, and set viewport
 	begin: function(){
 		 
-		this.time += 2;
+		this.time += .02;
 
 	    //Model Matrix
 	    var model = GFX.Matrix.identity();
@@ -826,7 +837,7 @@ GFX.Scene.prototype = {
 
 	/// Stop Rendering Scene
 	end: function(){
-		//this.shader.unbind();
+		this.shader.unbind();
 	}
 }
 

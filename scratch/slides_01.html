@@ -29,11 +29,22 @@
 		<div class="reveal">
 			<div class="slides">
 			<section>
+			
+<section data-markdown>
+<script type="text/template">
+### 3D Transformations
+- vertex shaders and vertex buffers
+- model, view, and projection matrices
+- quaternions and complex numbers
+- introduction to geometric algebra
+</script>
+</section>
+
 			<section data-markdown>
 
 <script type="text/template">
 ### The Vertex Shader
-#### Transform incoming vertex information
+#### Transform **every** incoming vertex
 
   	attribute vec3 position;
 
@@ -52,16 +63,20 @@
 <script type="text/template">
 ### The Vertex Shader
 
-* Attributes must be used in program to be active
+* Attributes must be **used** in program to be active
 	
-		attribute vec3 position;
-		
-		attribute vec2 uv;
-		varying vuv;
+		attribute vec3 position;	//in
+		attribute vec2 uv;		  //in
+
+		uniform mat4 model;
+		uniform mat4 view;
+		uniform mat4 projection;
+
+		varying vec2 vuv; 		  //out
 
 		void main(){
 			vuv = uv;
-			gl_Position = position;
+			gl_Position = projection * view * model * vec4(position,1.);
 		}
 
 * Pass `varying vec2 uv` coordinates through to fragment shader instead of `gl_FragCoord`
@@ -69,7 +84,147 @@
 </script>
 			</section>
 
+			<section data-markdown>
+<script type="text/template">
+### The Fragment Shader (using uv)
+
+* Pass `varying vec2 uv` coordinates through to fragment shader instead of `gl_FragCoord`
+
+	  varying vec2 vuv;
+
+	  void main() {
+	    vec2 st = vuv;
+	    vec3 color = vec3(st.x, 0., st.y );
+	    gl_FragColor = vec4(color,1.0);
+	  }
+
+</script>
 			</section>
+
+
+			</section>
+
+			<section>
+			
+			<section data-markdown>
+			<script type="text/template">
+			### Model, View, Projection
+			#### Transform "world space" coordinates to "screen space"
+
+			* Model: local $ \mapsto $ object
+			* View:  object $ \mapsto $ eye 
+			* Projection: eye $ \mapsto $ window
+
+			`$$f(\mathbf{v_{local}})= T_{viewport}[A_{projection} * A_{view} * A_{model} * h(\mathbf{v_{local}})]$$`
+
+			</script>
+			</section>
+
+			<section data-markdown>
+			<script type = "text/template">
+			### Model Matrix
+			#### Local $\mapsto$ Object
+
+			`$$ A_{model}= A_{translate} * A_{rotate} * A_{scale} $$`
+
+
+			</script>
+			</section>
+
+			<section data-markdown>
+			<script type="text/template">
+			### 2D Matrix Transformations
+			#### Dot each row with each column
+			$$\begin{bmatrix}
+					a & b \\\
+					c & d \\
+			\end{bmatrix} \cdot \begin{bmatrix} e \\\ f \end{bmatrix} = \begin{bmatrix} ae + bf \\\ ce + df \end{bmatrix}$$
+			</script>
+			</section>
+
+			<section data-markdown>
+			<script type="text/template">
+			### 2D Matrix Transformations: Scale
+			#### Dot each row with each column
+			$$\begin{bmatrix}
+					s_x & 0 \\\
+					0 & s_y \\
+			\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} s_xx \\\ s_yy \end{bmatrix}$$
+			</script>
+			</section>
+
+			<section data-markdown>
+			<script type="text/template">
+			### 2D Matrix Transformations: Translate
+			#### Dot each row with each column
+			$$\begin{bmatrix}
+					1 & 0 & t_x \\\
+					0 & 1 & t_y \\\
+					0 & 0 & 1
+			\end{bmatrix} \cdot \begin{bmatrix} x \\\ y  \\\ 1 \end{bmatrix} = \begin{bmatrix} x + t_x \\\ y + t_y \\\ 1 \end{bmatrix}$$
+			</script>
+			</section>
+			<section data-markdown>
+			<script type="text/template">
+			### 2D Matrix Transformations: Rotation
+			$$\begin{bmatrix}
+					\mbox{cos}\theta & -\mbox{sin}\theta \\\
+					\mbox{sin}\theta & \mbox{cos}\theta \\
+			\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} x \mbox{cos}\theta - y \mbox{sin}\theta \\\ x \mbox{sin}\theta + y\mbox{cos}\theta \end{bmatrix}$$
+			</script>
+			</section>
+
+
+			
+			<section data-markdown>
+<script type = "text/template">
+### View Matrix
+#### Object $\mapsto$ Eye
+
+
+	GFX.Matrix.lookAt = function(eye,target,up){
+			var z = (eye.sub(target)).unit();
+			var x = (up.cross(z)).unit();
+			var y = z.cross(x);
+			return new GFX.Matrix([
+				x.x, x.y, x.z, -(x.dot(eye)),
+				y.x, y.y, y.z, -(y.dot(eye)),
+				z.x, z.y, z.z, -(z.dot(eye)),
+				0,   0,   0,   1
+			]);
+		};
+
+</script>
+
+			</section>
+			<section data-markdown>
+<script type = "text/template">
+### Projection 
+#### Eye $\mapsto$ Clip
+
+	/// Symmetrical Frustum -- feed in field-of-view in degrees
+	GFX.Matrix.perspective = function(fovy, ratio, near, far){
+			var f = 1.0/ Math.tan(fovy*Math.PI/360.0);
+			var a = f/ratio;				 		    
+			var tb = far - near;
+			var c = -(far+near)/tb;
+			var d = -2*far*near/tb;
+
+			return new GFX.Matrix([
+				a, 0, 0,  0,
+				0, f, 0,  0,
+				0, 0, c,  d,
+				0, 0, -1, 0
+			]);
+		};
+
+</script>
+
+			</section>
+
+			</section>
+
+
 
 			<section data-markdown>
 				<script type="text/template">
@@ -222,50 +377,7 @@
 
 			</section>
 
-				<section>
-				<section data-markdown>
-				<script type="text/template">
-				### Matrix Transformations
-				#### Dot each row with each column
-				$$\begin{bmatrix}
-						a & b \\\
-						c & d \\
-				\end{bmatrix} \cdot \begin{bmatrix} e \\\ f \end{bmatrix} = \begin{bmatrix} ae + bf \\\ ce + df \end{bmatrix}$$
-				</script>
-				</section>
 
-				<section data-markdown>
-				<script type="text/template">
-				### Matrix Transformations: Scale
-				#### Dot each row with each column
-				$$\begin{bmatrix}
-						s_x & 0 \\\
-						0 & s_y \\
-				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} s_xx \\\ s_yy \end{bmatrix}$$
-				</script>
-				</section>
-
-				<section data-markdown>
-				<script type="text/template">
-				### Matrix Transformations: Translate
-				#### Dot each row with each column
-				$$\begin{bmatrix}
-						1 & 0 & t_x \\\
-						0 & 1 & t_y \\\
-						0 & 0 & 1
-				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y  \\\ 1 \end{bmatrix} = \begin{bmatrix} x + t_x \\\ y + t_y \\\ 1 \end{bmatrix}$$
-				</script>
-				</section>
-				<section data-markdown>
-				<script type="text/template">
-				### Matrix Transformations: Rotation
-				$$\begin{bmatrix}
-						\mbox{cos}\theta & -\mbox{sin}\theta \\\
-						\mbox{sin}\theta & \mbox{cos}\theta \\
-				\end{bmatrix} \cdot \begin{bmatrix} x \\\ y \end{bmatrix} = \begin{bmatrix} x \mbox{cos}\theta - y \mbox{sin}\theta \\\ x \mbox{sin}\theta + y\mbox{cos}\theta \end{bmatrix}$$
-				</script>
-				</section>
-				</section>
 				<section>
 
 					<section data-markdown>
