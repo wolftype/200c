@@ -454,11 +454,13 @@ GFX.Quaternion.prototype = {
 		return this;
 	},
 
+	/// feed in unit vectors, returns quaternion that takes v1 to v2
 	setRelative: function(v1, v2){
 		// axis is unit normal to the plane spanned by v1 and v2
 		// angle is the inverse cosine of the dot product between them
 		return setAxisAngle( v1.cross(v2), Math.acos( v1.dot(v2) ))
 	},
+
 
 	setDirection: function(v){
 		return setRelative( new GFX.Vector(0,0,1), v);
@@ -789,7 +791,7 @@ GFX.Scene = function(width, height){
 	this.height = height || GL.canvas.height;		///< Height of Context in Pixels
 	this.camera = new GFX.Camera();					///< View and Projection matrices
 	this.shader = new GFX.Shader();					///< Vertex and Fragment Shader
-	this.color = [1.0,0.0,0.0,1.0]; 				///< Background Color
+	this.color = [.4,.4,.4,1.0]; 				///< Background Color
 	this.time = 0.0;							    ///< Time: will increment every onRender()
 
 };

@@ -6,46 +6,69 @@
 
 var box;
 var app = new GFX.App();
+var indicesLength;
 
 /// On Initialization of the WebGL Application (this happens once)
 app.onInit = function(){
 
+  // A CUBE! 
+  // We include each vertex on the back side TWICE so that we can attach
+  // TWO separate uv coordinates to each
   var vertices = new Float32Array( [
-    -1.0, -1.0, -1.0,
-    -1.0, 1.0,  -1.0,
-    1.0,  1.0,  -1.0,
-    1.0,  -1.0, -1.0,
-    -1.0, -1.0, 1.0,
-    -1.0, 1.0,  1.0,
-    1.0,  1.0,  1.0,
-    1.0,  -1.0, 1.0,
-  ]);
+    -1.0, -1.0, 1.0,  //bottom left front
+    -1.0, 1.0,  1.0,  //top left front
+    1.0,  1.0,  1.0,  //top right front
+    1.0,  -1.0, 1.0,  //bottom right front
 
-  var colors = new Float32Array([
-    1.0,0.0,0.0,
-    0.0,1.0,0.0,
-    0.0,0.0,1.0,
-    1.0,1.0,0.0,
-    0.0,1.0,1.0,
-    1.0,0.0,1.0,
-    0.0,0.0,0.0,
-    1.0,1.0,1.0
-  ]);  
+    -1.0, -1.0, -1.0, //bottom left back
+    -1.0, 1.0,  -1.0, //top left back
+    1.0,  1.0,  -1.0, //top right back
+    1.0,  -1.0, -1.0, //bottom right back
+
+    //second copy of back side:
+    -1.0, -1.0, -1.0, //bottom left back II
+    -1.0, 1.0,  -1.0, //top left back II
+    1.0,  1.0,  -1.0, //top right back II
+    1.0,  -1.0, -1.0, //bottom right back II
+
+  ]); 
 
   var texCoord = new Float32Array([
-    0.0, 0.0,
-    0.0, 1.0,
+    0.0, 0.0,   
+    0.0, 1.0,  
     1.0, 1.0,
     1.0, 0.0, 
     1.0, 0.0,
     1.0, 1.0,
     0.0, 1.0,
-    0.0, 0.0,   
+    0.0, 0.0, 
+    //uvs to attach to second copy of back face
+    //for texturing top and bottom of cube:
+    0.0, 1.0,
+    0.0, 0.0,
+    1.0, 0.0,
+    1.0, 1.0,      
   ]);  
 
-  var indices = new Uint16Array([
-    0,1,3,2,7,6,4,5,0,1
-  ]);
+  //Triangle Strip, zig zag indices, and double up to break
+   var indicesForStrip = new Uint16Array([
+    // f = front, r = right, b = back, l = left, t = top, bt = bottom
+    //     f,  r,  b, l,break,      t,break,     bt  
+     0,1,3,2,7,6,4,5,0,1,1,1,1,9,2,10,10,0,0,8,3,11
+   ]);
+
+  //Triangle Strip, zig zag indices, and double up to break
+   var indices = new Uint16Array([
+     1,0,3,2,1,3, //front
+     2,3,7,6,2,7, //right
+     6,7,4,5,6,4, //back
+     5,4,1,1,4,0, //left
+     //use alternative uvs for top and bottom:
+     9,1,2,10,9,2, //top
+     0,8,11,3,0,11 //bottom
+   ]);
+
+   indicesLength = indices.length;
 
   //Create and Bind two new array buffers and a new element array buffer
   box = new GFX.Mesh();
@@ -55,12 +78,7 @@ app.onInit = function(){
   box.vertexBuffer.alloc( vertices.byteLength );
   box.vertexBuffer.data(vertices);
 
-  //Allocate Some Data on the GPU and copy color data over
-  box.colorBuffer.bind();
-  box.colorBuffer.alloc( colors.byteLength );
-  box.colorBuffer.data(colors);
-
-  //Allocate Some Data on the GPU and copy color data over
+  //Allocate Some Data on the GPU and copy tex data over
   box.texBuffer.bind();
   box.texBuffer.alloc( texCoord.byteLength );
   box.texBuffer.data(texCoord);
@@ -77,6 +95,7 @@ app.onRender = function() {
 
   var scene = this.scene;
 
+  //rotate scene camera about y axis
   scene.camera.frame.rotateY( Math.sin( scene.time) * Math.PI / 10  );
 
   //begin scene render, send matrices over to shader uniform
@@ -84,15 +103,12 @@ app.onRender = function() {
 
     //Send Time Variable over to GPU
     scene.shader.setUniformFloat("u_time", scene.time )
-
-
+ 
     //enable attributes in shader
     scene.shader.enableAttribute( "position" );
-    scene.shader.enableAttribute( "color" );
     scene.shader.enableAttribute( "uv" );
 
-    //box.frame.rotateX( scene.time );
-    //box.frame.scale.x = Math.sin( scene.time );
+    box.frame.rotateX( scene.time );
 
     //upload model matrix
     box.uploadModel(scene.shader)
@@ -102,20 +118,19 @@ app.onRender = function() {
     //Point Buffer to Attribute in shader
     scene.shader.pointAttribute("position", 3);
 
-    //Bind Color Buffer
-    box.colorBuffer.bind();
-    //Point Buffer to Attribute in Shader
-    scene.shader.pointAttribute("color", 3)
-
     //Bind TexCoord Buffer
     box.texBuffer.bind();
     //Point Buffer to Attribute in Shader
     scene.shader.pointAttribute("uv", 2)
 
-    //Bind Index Buffer
+    //Bind Index Buffer and Draw based on Indices
     box.indexBuffer.bind();
-    //Draw the 10 indices
-    box.indexBuffer.drawElements(GL.TRIANGLE_STRIP, 10);
+    //Draw the indices
+    box.indexBuffer.drawElements(GL.TRIANGLES, indicesLength);
+
+    //or just draw array buffer directly
+  //box.vertexBuffer.bind();
+  //box.vertexBuffer.drawArrays(GL.LINE_STRIP, 8);
 
   scene.end();
 }
@@ -130,19 +145,16 @@ app.onRender = function() {
   #endif
 
   attribute vec3 position;      //Position
-  attribute vec3 color;         //Color
   attribute vec2 uv;            //Texture;
 
   uniform mat4 model;           //Model Matrix
   uniform mat4 view;            //View Matrix
   uniform mat4 projection;      //Projection Matrix
 
-  varying vec3 vcolor;          //Color to output to fragment shader
   varying vec2 vuv;             //Texture Coordiante to Output to Fragment Shader
 
   void main() {
     vuv = uv;
-    vcolor = color;
     gl_Position = projection * view * model * vec4(position, 1.0);
   }
 </script>
@@ -157,13 +169,12 @@ app.onRender = function() {
 
   uniform float u_time;
 
-  varying vec3 vcolor;
   varying vec2 vuv;
 
   void main() {
     vec2 st = vuv;
     st = fract(st*2.0 );
-    vec3 color = vec3(st.x * sin(u_time), 0., st.y );//vcolor * sin(u_time);
+    vec3 color = vec3(st.x * abs(sin(u_time)), 0., st.y * abs(cos(u_time)) );
     gl_FragColor = vec4(color,1.0);
   }
 </script>
