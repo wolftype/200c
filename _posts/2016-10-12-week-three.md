@@ -12,6 +12,13 @@ Reading: [LearnOpenGL: Hello Triangle](http://learnopengl.com/#!Getting-started/
 Reading: [LearnOpenGL: Transformations](http://learnopengl.com/#!Getting-started/Transformations)  
 Reading: [LearnOpenGL: Coordinate Systems](http://learnopengl.com/#!Getting-started/Coordinate-Systems) 
 
+<figure>
+<iframe src="{{site.baseurl}}/scratch/webgl_gfx.html" 
+    width="800" height="600" frameborder="0"
+    scrolling="no" marginheight="0"
+    marginwidth="0" ></iframe>
+</figure>
+
 **Coding Assignment**: One, Two, Three, Mesh!
 
 Use the 200c course code `gfx.js` (you may also use a different framework if you prefer), create

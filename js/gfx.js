@@ -799,7 +799,7 @@ GFX.Scene = function(width, height){
 	this.height = height || GL.canvas.height;		///< Height of Context in Pixels
 	this.camera = new GFX.Camera();					///< View and Projection matrices
 	this.shader = new GFX.Shader();					///< Vertex and Fragment Shader
-	this.color = [.4,.4,.4,1.0]; 				///< Background Color
+	this.color = [.4,.4,.4,1.0]; 			    	///< Background Color
 	this.time = 0.0;							    ///< Time: will increment every onRender()
 
 };
