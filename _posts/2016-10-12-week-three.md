@@ -6,7 +6,7 @@ category: schedule
 3D Transformation Matrices  
 [Slides from class]({{ site.baseurl}}/scratch/slides_01.html)
 
-Reading: [gfx.js](http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js)
+Reading: [gfx.js](http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js)  
 Reading: [Matrix Tutorial]({{ site.baseurl}}{% post_url 2016-09-20-matrices%})  
 Reading: [LearnOpenGL: Hello Triangle](http://learnopengl.com/#!Getting-started/Hello-Triangle)  
 Reading: [LearnOpenGL: Transformations](http://learnopengl.com/#!Getting-started/Transformations)  
