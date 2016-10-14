@@ -6,7 +6,7 @@
    How to use: 
 
   		<html>
-  		<script src = "http://rawgit.com/wolftype/gh-pages/js/gfx.js"></script>
+  		<script src = "http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
   		
   		var app = new GFX.App();
 
@@ -719,6 +719,7 @@ GFX.Shader.prototype = {
 
 /// type: Options are GL.ARRAY_BUFFER and GL.ELEMENT_ARRAY_BUFFER
 GFX.Buffer = function(type){
+	this.num = 0;
 	this.type = type || GL.ARRAY_BUFFER;
 	this.create();
 	this.bind();
@@ -746,6 +747,7 @@ GFX.Buffer.prototype = {
 
 	/// Send Data into Buffer
 	data: function(data, offset){
+		this.num = data.length;
 		var offset = offset || 0;
 		GL.bufferSubData(this.type, offset, data);
 	},
@@ -754,12 +756,12 @@ GFX.Buffer.prototype = {
 	/// mode: GL.TRIANGLE_STRIP, GL.LINES, etc
 	/// num: number of elements to draw
 	drawElements: function(mode, num){
-		GL.drawElements( mode, num, GL.UNSIGNED_SHORT, 0);
+		GL.drawElements( mode, num || this.num, GL.UNSIGNED_SHORT, 0);
 	},
 
 	/// Draw Arrays
 	drawArrays: function(mode, num){
-		GL.drawArrays( mode, 0, num)
+		GL.drawArrays( mode, 0, num || (this.num / 3) )
 	},
 
 };
