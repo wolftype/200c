@@ -1,34 +1,40 @@
-/*  author: wolftype
-    license: MIT
+/*  
+author: wolftype 
+license: MIT
 
-   Core GL Code: Context, Vectors, Matrices, Quaternions, Frames, Scenes, Shaders
+   GFX.js (http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js)
+
+   An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
+
+   With Context, Vectors, Matrices, Quaternions, Frames, Scenes and Shaders
 
    How to use: 
 
-  		<html>
-  		<script src = "http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
-  		
-  		var app = new GFX.App();
+      <html>
+      <script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
+      
+      var app = new GFX.App();
 
-  		app.onInit() = function(){
-			//initialize GL objects and buffers
-  		}
+      app.onInit() = function(){
+      //initialize GL objects and buffers
+      }
 
-  		app.onRender() = function(){
-			//drawing routines
-  		}
+      app.onRender() = function(){
+      //drawing routines
+      }
 
-  		<script id = "gfxvert" type="text/glsl">
-			//VERTEX SHADER CODE
-  		</script>
-        <script id = "gfxfrag" type="text/glsl">
-			//FRAGMENT SHADER CODE
-        </script>
-  		
-  		<body onload = "app.start()">
-   		<canvas id = "gfxcanvas" width = "640" height = "480"</canvas>
-  		</body>
-  		</html>
+      <script id = "gfxvert" type="text/glsl">
+      //vertex shader code
+      </script>
+
+      <script id = "gfxfrag" type="text/glsl">
+      //fragment shader code
+      </script>
+      
+      <body onload = "app.start()">
+      <canvas id = "gfxcanvas" width = "640" height = "480"></canvas>
+      </body>
+      </html>
 */
 
 
@@ -876,7 +882,7 @@ GFX.App.prototype = {
  	},
 
  	mainloop: function(){
- 		RequestAnimFrame( this.mainloop.bind(this) ); //must bind function to this instance so it doesn't look in window's methods
+ 		RequestAnimFrame( this.mainloop.bind(this) ); //must bind function to "this" instance so it doesn't look in window's methods
  		this.onRender();
  	}
 }
