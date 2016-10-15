@@ -123,12 +123,12 @@ GFX.Vector.prototype = {
 		return new GFX.Vector(this.y*v.z - this.z*v.y, this.z*v.x - this.x*v.z, this.x*v.y-this.y*v.x)
 	},
 	
-	mag: function(){
+	norm: function(){
 		return Math.sqrt( this.dot(this) );
 	},
 	
 	unit: function(){
-		return this.divide( this.mag() );
+		return this.divide( this.norm() );
 	},
 	
 	neg: function(){
@@ -179,12 +179,12 @@ GFX.Vector4.prototype = {
 		return this.x*v.x + this.y*v.y + this.z*v.z + this.w*v.w;
 	},
 	
-	mag: function(){
+	norm: function(){
 		return Math.sqrt( this.dot(this) );
 	},
 	
 	unit: function(){
-		return this.divide( this.mag() );
+		return this.divide( this.norm() );
 	},
 	
 	neg: function(){
@@ -445,7 +445,7 @@ GFX.Quaternion.prototype = {
 	constructor: GFX.Quaternion,
 	
 	set: function(w,x,y,z){
-		this.w = w || 1;
+		this.w = w || 0;
 		this.x = x || 0;
 		this.y = y || 0;
 		this.z = z || 0;
@@ -482,6 +482,7 @@ GFX.Quaternion.prototype = {
 	
 	unit: function(){
 		var n = this.norm();
+		if (n===0) n = 1.0;
 		return new GFX.Quaternion(this.w/n, this.x/n, this.y/n, this.z/n);
 	},
 	
@@ -500,7 +501,7 @@ GFX.Quaternion.prototype = {
 	
 	/// Apply Quaternion to Vector v
 	apply: function(v){
-		var q = this.unit();
+		var q = this;
 		var qv = new GFX.Quaternion(0,v.x,v.y,v.z);
 		var nq = q.mult(qv).mult( q.inverse() );
 		return new GFX.Vector( nq.x, nq.y, nq.z);
@@ -533,7 +534,7 @@ GFX.Quaternion.prototype = {
 /// A Frame has a 3D position, a 3D orientation, and a 3D Scale
 GFX.Frame = function(x,y,z){
 	this.position = new GFX.Vector(x,y,z);			///< A 3D Position
-	this.rotation =  new GFX.Quaternion(); 	        ///< A 3D Orientation
+	this.rotation =  new GFX.Quaternion(1,0,0,0); 	///< A 3D Orientation
 	this.scale = new GFX.Vector(1,1,1); 			///< A 3D Vector
 };
 
