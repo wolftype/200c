@@ -83,10 +83,13 @@ app.onRender = function() {
     	var amt = i/10;
     	var fa = GFX.Frame.FromTo(objA.frame, objB.frame, amt);
     	for (var j=0;j<=10;++j){
+    		
     		var rel = new GFX.Frame();
-    		var fb = new GFX.Frame();
+    		
     		rel.position.set(0,j/10,0);
     		rel.rotation.setAxisAngle(new GFX.Vector(0,1,0), Math.PI * j/10 * Math.sin(scene.time));
+    		rel.scale.set(1-j/10,1-j/10,1-j/10);
+    		
     		tmp.frame = fa.mult(rel);
     		scene.draw(tmp);
     	}

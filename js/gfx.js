@@ -622,6 +622,7 @@ GFX.Frame.prototype = {
 		var frame = new GFX.Frame();
 		frame.position = this.position.add( this.rotation.apply(relFrame.position) );
 		frame.rotation = this.rotation.mult(relFrame.rotation);
+		frame.scale.set( this.scale.x * relFrame.scale.x, this.scale.y * relFrame.scale.y, this.scale.z * relFrame.scale.z);
 		return frame;
 	},
 
