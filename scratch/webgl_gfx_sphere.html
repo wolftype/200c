@@ -1,0 +1,174 @@
+<html>
+
+<!--  
+
+author: wolftype 
+license: MIT
+
+   Example use of GFX.js (http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js)
+
+   An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
+
+   With Context, Vectors, Matrices, Quaternions, Frames, Scenes and Shaders
+
+   How to use: 
+
+      <html>
+      <script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
+      
+      var app = new GFX.App();
+
+      app.onInit() = function(){
+      //initialize GL objects and buffers
+      }
+
+      app.onRender() = function(){
+      //drawing routines
+      }
+
+      <script id = "gfxvert" type="text/glsl">
+      //vertex shader code
+      </script>
+
+      <script id = "gfxfrag" type="text/glsl">
+      //fragment shader code
+      </script>
+      
+      <body onload = "app.start()">
+      <canvas id = "gfxcanvas" width = "640" height = "480"></canvas>
+      </body>
+      </html>
+--> 
+
+
+<script src = "../js/gfx.js"></script>
+
+<script type="text/javascript">
+
+
+var app = new GFX.App();
+var sphere;
+
+/// On Initialization of the WebGL Application (this happens once)
+app.onInit = function(){
+
+
+  var v = [];
+
+  var x = new GFX.Vector(1.0,0.0,0.0); //x axis
+  var y = new GFX.Vector(0.0,1.0,0.0); //y axis
+  var z = new GFX.Vector(0.0,0.0,1.0); //z axis
+
+  var quatA = new GFX.Quaternion();
+  var quatB = new GFX.Quaternion();
+
+  var num = 12.;
+  for (var i=0;i<num;++i){
+    quatA.setAxisAngle( y, 2.*Math.PI * i/num );
+    //a rotation of z axis around the y axis, by amount 0 - 2PI
+    var axis = quatA.apply(z);
+    for (var j=0; j<num; ++j){
+      //a rotation around the rotated the z axis:
+      quatB.setAxisAngle( axis, Math.PI * ((j/num) - .5)  ) ;
+      //the first rotation, followed by the second:
+      var q = quatB.mult(quatA);
+      //apply it to the x axis
+      var vec = q.apply(x);
+      //add to our list of vertices
+      v.push(vec.x, vec.y, vec.z);  
+    }
+  }
+  
+  var vertices = new Float32Array( v ); 
+
+  //Break Object Vertices Triangles
+   var indices = new Uint16Array([]);
+
+  //Create and Bind two new array buffers and a new element array buffer
+  sphere = new GFX.Mesh();
+
+  //Allocate Some Data on the GPU and copy position data over
+  sphere.vertexBuffer.bind();
+  sphere.vertexBuffer.alloc( vertices.byteLength );
+  sphere.vertexBuffer.data(vertices);
+
+  this.scene.color = [1.0,1.0,1.0,1.0];
+}
+
+
+// Render the scene
+app.onRender = function() {
+
+  var scene = this.scene;
+
+  //rotate scene camera about y axis
+ // scene.camera.frame.rotateY( Math.sin( scene.time) * Math.PI / 20  );
+
+  //begin scene render, send matrices over to shader uniform
+  scene.begin();
+
+    //Send Time Variable over to GPU
+    scene.shader.setUniformFloat("u_time", scene.time )
+ 
+    //enable attributes in shader
+    scene.shader.enableAttribute( "position" );
+
+    sphere.frame.rotateY( scene.time );
+
+    //upload model matrix
+    sphere.uploadModel(scene.shader)
+
+    //Bind Vertex Buffer
+    sphere.vertexBuffer.bind();
+    //Point Buffer to Attribute in shader
+    scene.shader.pointAttribute("position", 3);
+
+   //Draw the vertex array buffer directly as points (can also use GL.LINES, GL.LINE_STRIP, GL.TRIANGLES, etc)
+    sphere.vertexBuffer.bind();
+    sphere.vertexBuffer.drawArrays(GL.POINTS);
+
+  scene.end();
+}
+
+</script>
+
+<!-- VERTEX SHADER -->
+<script id="gfxvert" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  attribute vec3 position;      //Position
+
+  uniform mat4 model;           //Model Matrix
+  uniform mat4 view;            //View Matrix
+  uniform mat4 projection;      //Projection Matrix
+
+  void main() {
+    gl_Position = projection * view * model * vec4(position, 1.0);
+    gl_PointSize = 10.0;
+  }
+</script>
+
+
+<!-- FRAGMENT SHADER -->
+<script id="gfxfrag" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform float u_time;
+
+  void main() {
+    gl_FragColor = vec4(0.0,0.0,0.0,1.0);
+  }
+</script>
+
+<body onload=app.start()>
+<center>
+<canvas id="gfxcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
+</center>
+</body>
+</html>

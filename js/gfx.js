@@ -141,6 +141,10 @@ GFX.Vector.prototype = {
 		
 }
 
+GFX.Vector.Lerp = function( va, vb, amt){
+	return va.mult(1-amt).add(vb.mult(amt));
+}
+
 
 /// 4D Vector Operations
 GFX.Vector4 = function(x,y,z,w){
@@ -460,16 +464,11 @@ GFX.Quaternion.prototype = {
 		return this;
 	},
 
-	/// feed in unit vectors, returns quaternion that takes v1 to v2
-	setRelative: function(v1, v2){
+	/// feed in unit vectors and amt, returns quaternion that takes v1 to v2
+	setRelative: function(v1, v2, amt){
 		// axis is unit normal to the plane spanned by v1 and v2
 		// angle is the inverse cosine of the dot product between them
-		return setAxisAngle( v1.cross(v2), Math.acos( v1.dot(v2) ))
-	},
-
-
-	setDirection: function(v){
-		return setRelative( new GFX.Vector(0,0,1), v);
+		return this.setAxisAngle( v1.cross(v2), Math.acos( v1.dot(v2) ) * amt)
 	},
 
 	sqnorm: function(){
@@ -490,6 +489,10 @@ GFX.Quaternion.prototype = {
 	inverse: function(){
 		return new GFX.Quaternion(this.w, -this.x, -this.y, -this.z);
 	},
+
+	add: function(q){
+		return new GFX.Quaternion(this.w+q.w, this.x+q.x, this.y+q.y, this.z+q.z);
+	},
 	
 	/// Multiply two quaternions together
 	mult: function(q){
@@ -497,6 +500,10 @@ GFX.Quaternion.prototype = {
         			    			this.w * q.x + this.x * q.w + this.y * q.z - this.z * q.y,
         							this.w * q.y + this.y * q.w + this.z * q.x - this.x * q.z,
         							this.w * q.z + this.z * q.w + this.x * q.y - this.y * q.x );
+	},
+
+	scalarMult: function(s){
+		return new GFX.Quaternion( this.w*s, this.x*s, this.y*s, this.z*s);
 	},
 	
 	/// Apply Quaternion to Vector v
@@ -526,9 +533,30 @@ GFX.Quaternion.prototype = {
 
 			]);		
 	},
-
-
 	
+}
+
+
+GFX.Quaternion.Slerp = function(qa, qb, amt){
+	var q = new GFX.Quaternion();
+	//rotation which takes this to q:
+	var rel = qb.mult(qa.inverse());
+	//the angle
+	var theta = 2.0*Math.acos(rel.w);
+	//the axis
+	var axis = new GFX.Vector(rel.x, rel.y, rel.z);
+	//normalized:
+	axis = axis.unit();
+	//multiply by starting qa
+	return qa.mult( q.setAxisAngle(axis,theta*amt) );
+	///SAME AS THIS FASTER METHOD:
+	//var st = Math.sin(amt*theta/2.0);
+	//return qa.scalarMult( Math.sin( (1-amt) * theta/2.0 ) ).add( qb.scalarMult(st) ).scalarMult(1/Math.sin(theta/2.0));
+}
+
+GFX.Quaternion.AxisAngle = function(axis,angle){
+	var q = new GFX.Quaternion();
+	return q.setAxisAngle(axis,angle);
 }
 
 /// A Frame has a 3D position, a 3D orientation, and a 3D Scale
@@ -574,6 +602,23 @@ GFX.Frame.prototype = {
 		this.rotation.setAxisAngle( this.z(), rad );
 	},
 
+	//rotate Z axis towards t
+	setTargetX: function(t){
+		return this.rotation.setRelative( new GFX.Vector(1,0,0), t.sub(this.position).unit(), 1.0);
+	},
+
+	//rotate Z axis towards t
+	setTargetY: function(t){
+		return this.rotation.setRelative( new GFX.Vector(0,1,0), t.sub(this.position).unit(), 1.0);
+	},
+
+	//rotate Z axis towards t
+	setTargetZ: function(t){
+		return this.rotation.setRelative( new GFX.Vector(0,0,1), t.sub(this.position).unit(), 1.0);
+	},
+
+	
+
 	//matrix representation
 	matrix: function(){
 		var rmat = this.rotation.matrix();
@@ -597,12 +642,27 @@ GFX.Frame.prototype = {
 
 };
 
+GFX.Frame.FromTo = function(fa,fb,amt){
+	var f = new GFX.Frame();
+	f.position = GFX.Vector.Lerp( fa.position, fb.position, amt);
+	f.rotation = GFX.Quaternion.Slerp( fa.rotation, fb.rotation, amt);
+	return f;
+}
+
 /// Camera has focallength, eye separation, and frame of reference
 GFX.Camera = function(){
 	this.focalLength = 100;						//parallax merge point
 	this.eyesep = .3;							//eye separation
 	this.frame = new GFX.Frame(0,0,5);		    //position and orientation
 };
+
+GFX.Camera.prototype = {
+	constructor: GFX.Camera,
+
+	setTarget: function(t){
+		this.frame.rotation.setRelative( new GFX.Vector(0,0,1), this.frame.position.sub(t).unit(), 1.0);
+	}
+}
 
 
 GFX.Shader = function(){};
@@ -759,6 +819,13 @@ GFX.Buffer.prototype = {
 		GL.bufferSubData(this.type, offset, data);
 	},
 
+	///bind, alloc, load
+	load: function(data){
+		this.bind();
+		this.alloc(data.byteLength);
+		this.data(data);
+	},
+
 	/// Draw Elements (indices into buffered data)
 	/// mode: GL.TRIANGLE_STRIP, GL.LINES, etc
 	/// num: number of elements to draw
@@ -773,24 +840,91 @@ GFX.Buffer.prototype = {
 
 };
 
-/// Mesh has a frame and a bunch of buffers on the GPU
-GFX.Mesh = function(){
-	this.frame = new GFX.Frame();
-	this.vertexBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
-	this.colorBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
-	this.texBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
-	this.indexBuffer = new GFX.Buffer( GL.ELEMENT_ARRAY_BUFFER );
+GFX.Mesh = function( mesh ){
+	console.log("instance");
+	this.frame = new GFX.Frame();	
+	if (mesh){
+		this.useElements = mesh.useElements;
+		this.useColor = mesh.useColor;
+		this.useUV = mesh.useUV;
+		this.mode = mesh.mode;
+		this.vertexBuffer = mesh.vertexBuffer;
+		this.colorBuffer =  mesh.colorBuffer;
+		this.texBuffer = mesh.texBuffer;
+		this.indexBuffer = mesh.indexBuffer;
+	} else { 
+		this.useElements = false;
+		this.useColor = false;
+		this.useUV = false;
+		this.mode = GL.TRIANGLES;
+		this.vertexBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
+		this.colorBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
+		this.texBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
+		this.indexBuffer = new GFX.Buffer( GL.ELEMENT_ARRAY_BUFFER );	
+	}
 };
 
 GFX.Mesh.prototype = {
 	constructor: GFX.Mesh,
 
-	/// Bind current objects model matrix to shader uniform
 	uploadModel: function(shader){
 		var tmp = this.frame.matrix().transpose();
 		shader.setUniformMatrix("model", tmp.val);
-	}
+	},
+
+	load: function(vertices, indices){
+		this.vertexBuffer.load(vertices);
+		if (indices) this.indexBuffer.load(indices);
+	},
+
+	loadUV: function(uv){
+		this.useUV = true;
+		this.texBuffer.load(uv);
+	},
+
+	loadColor: function(colors){
+		this.useColor = true;
+		this.colorBuffer.load(colors);
+	},
+
 };
+
+/// Classic Mesh Buffers
+GFX.Mesh.MakeFrame = function(){
+
+  var buffer = new GFX.Mesh();
+
+  var vertices = new Float32Array( [
+  	0.0,0.0,0.0,
+  	1.0,0.0,0.0,
+   	0.0,0.0,0.0, 	
+  	0.0,1.0,0.0,
+   	0.0,0.0,0.0, 	
+  	0.0,0.0,1.0
+  ]); 
+
+  var colors = new Float32Array( [
+  	1.0,0.0,0.0,
+  	1.0,0.0,0.0,
+  	0.0,1.0,0.0,
+  	0.0,1.0,0.0,
+  	0.0,0.0,1.0,
+  	0.0,0.0,1.0
+  ]);
+
+  buffer.load(vertices); 
+  buffer.loadColor(colors);
+  buffer.mode = GL.LINES;
+  buffer.useElements = false;
+
+  GFX.Mesh.Frame = buffer;
+
+};
+
+GFX.Mesh.Make = function(){
+	GFX.Mesh.MakeFrame();
+}
+
 
 /// Scene: has width, height, background color, camera, shader, and time
 /// To be created after GFX.Context() has already defined a global GL context
@@ -802,7 +936,7 @@ GFX.Scene = function(width, height){
 	this.shader = new GFX.Shader();					///< Vertex and Fragment Shader
 	this.color = [.4,.4,.4,1.0]; 			    	///< Background Color
 	this.time = 0.0;							    ///< Time: will increment every onRender()
-
+	this.frame = new GFX.Frame();					///< Scene's base model transform
 };
 
 GFX.Scene.prototype = {
@@ -824,7 +958,7 @@ GFX.Scene.prototype = {
 		this.time += .02;
 
 	    //Model Matrix
-	    var model = GFX.Matrix.identity();
+	    var model = this.frame.matrix();//GFX.Matrix.identity();
 
   		//View Matrix
 	    var view =  GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
@@ -846,45 +980,132 @@ GFX.Scene.prototype = {
     	GL.viewport(0,0, this.width, this.height);	
 	},
 
+	/// Draw a Mesh
+	draw: function(mesh){
+
+		var m = this.frame.matrix().mult( mesh.frame.matrix() );
+		this.shader.setUniformMatrix("model", m.transpose().val );
+
+    	if (mesh.useColor){
+    		this.shader.enableAttribute("color");
+			mesh.colorBuffer.bind();
+			this.shader.pointAttribute("color",3);		
+    	}
+
+    	if (mesh.useUV){
+    		this.shader.enableAttribute("uv");
+			mesh.texBuffer.bind();
+			this.shader.pointAttribute("uv",3);		
+    	}
+
+		this.shader.enableAttribute("position");
+		mesh.vertexBuffer.bind();
+		this.shader.pointAttribute("position",3);		
+
+    	if (mesh.useElements){
+			mesh.indexBuffer.bind();
+			mesh.indexBuffer.drawElements(mesh.mode);
+    	} else {
+			mesh.vertexBuffer.drawArrays(mesh.mode);
+		}
+
+	},
+
 	/// Stop Rendering Scene
 	end: function(){
 		this.shader.unbind();
 	}
 }
 
+
+GFX.Mouse = function(){
+	this.x = 0;
+	this.y = 0;
+	this.lastX = 0;
+	this.lastY = 0;
+	this.dx = 0;
+	this.dy = 0;
+	this.frame = new GFX.Frame();
+	this.down = false;
+};
+
+GFX.Mouse.prototype = {
+	constructor: GFX.Mouse
+};
+
 GFX.App = function(){
-
+	this.mouse = new GFX.Mouse();
+	this.rect;
 }
-
 GFX.App.prototype = {
 
 	constructor: GFX.App,
 
 	/// Defaults to finding element called "gfxcanvas" "gfxvert" and "gfxfrag"
 	_init: function(){
-		GFX.InitContext( document.getElementById("gfxcanvas") );
+		var canvas = document.getElementById("gfxcanvas");
+		GFX.InitContext(canvas);
+		canvas.addEventListener("mousedown",this);		
+		canvas.addEventListener("mousemove",this);		
+		canvas.addEventListener("mouseup",this);	
+		canvas.addEventListener("mouseleave",this);
+
+		this.rect = canvas.getBoundingClientRect();	
+
  		var vertScript = document.getElementById("gfxvert").text;
   		var fragScript = document.getElementById("gfxfrag").text;
 		this.scene = new GFX.Scene();
   		this.scene.shader.program( vertScript, fragScript );
+  		GFX.Mesh.Make(); // make buffers
 		this.onInit();
 	},
 
 	/// User initialization of GL objects and buffers
 	onInit: function(){},
 
-	/// Called Repeatedly by Animate function
+	/// User Code Called Repeatedly by Animate function
 	onRender: function(){},
 
 	/// Initialize and Begin 
 	start: function() {
   		this._init();
-  		this.mainloop();
+  		this._mainloop();
  	},
 
- 	mainloop: function(){
- 		RequestAnimFrame( this.mainloop.bind(this) ); //must bind function to "this" instance so it doesn't look in window's methods
+ 	/// The recursive call loop
+ 	_mainloop: function(){
+ 		RequestAnimFrame( this._mainloop.bind(this) ); //must bind function to "this" instance so it doesn't look in window's methods
  		this.onRender();
+ 	},
+
+ 	handleEvent: function(e){
+ 		switch(e.type){
+ 			case "mousedown":
+ 				this.mouse.down = true;
+ 				this.mouse.lastX = e.x - this.rect.left;
+ 				this.mouse.lastY = this.rect.height - (e.y - this.rect.top);
+ 				this.mouse.frame.rotation = this.scene.frame.rotation;
+ 				break;
+ 			case "mousemove":
+ 				if (this.mouse.down){
+ 					this.mouse.x = e.x - this.rect.left;
+ 					this.mouse.y = this.rect.height - (e.y - this.rect.top);
+ 					this.mouse.dx = this.mouse.x - this.mouse.lastX;
+ 					this.mouse.dy = this.mouse.y - this.mouse.lastY;
+
+ 					var z = new GFX.Vector(0,0,1);
+ 					var move = new GFX.Vector(this.mouse.dx / this.rect.width, this.mouse.dy / this.rect.height, 0.0);
+ 					var axis = z.cross(move);
+ 					var norm = move.norm();
+ 					var q = GFX.Quaternion.AxisAngle( axis.unit(), norm );
+ 					this.scene.frame.rotation = q.mult( this.mouse.frame.rotation );
+ 				}
+ 				break;
+ 			case "mouseup":
+ 			case "mouseleave": 			
+ 				this.mouse.down = false;
+ 				break; 			
+ 		}
  	}
 }
 	
