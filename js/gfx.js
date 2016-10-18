@@ -617,7 +617,13 @@ GFX.Frame.prototype = {
 		return this.rotation.setRelative( new GFX.Vector(0,0,1), t.sub(this.position).unit(), 1.0);
 	},
 
-	
+	//"multiply" by another frame, to get this frame + relative transformation
+	mult: function(relFrame){
+		var frame = new GFX.Frame();
+		frame.position = this.position.add( this.rotation.apply(relFrame.position) );
+		frame.rotation = this.rotation.mult(relFrame.rotation);
+		return frame;
+	},
 
 	//matrix representation
 	matrix: function(){
@@ -633,9 +639,6 @@ GFX.Frame.prototype = {
 			0, 		  0,	    0, 		   1
 		]);
 
-		//console.log("a", m.val);
-		//console.log("b", m2.val);
-		//console.log("r", r)
 		return m2;
 
 	}	
@@ -646,6 +649,7 @@ GFX.Frame.FromTo = function(fa,fb,amt){
 	var f = new GFX.Frame();
 	f.position = GFX.Vector.Lerp( fa.position, fb.position, amt);
 	f.rotation = GFX.Quaternion.Slerp( fa.rotation, fb.rotation, amt);
+	f.scale = GFX.Vector.Lerp( fa.scale, fb.scale, amt);
 	return f;
 }
 

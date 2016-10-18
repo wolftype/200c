@@ -41,7 +41,10 @@ license: MIT
 --> 
 
 
-<script src = "http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
+<script src = "http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js">
+//	
+
+</script> 
 
 <script type="text/javascript">
 
@@ -59,9 +62,6 @@ app.onInit = function(){
   objB.frame.position.set(2,0,0);
 
   this.scene.color = [1.0,0.0,1.0,1.0];
- // this.scene.camera.frame.position.set(5,0,0);
- // this.scene.camera.setTarget(new GFX.Vector(0,0,0));
-  console.log(this.scene.camera.frame);
 }
 
 
@@ -69,27 +69,27 @@ app.onRender = function() {
 
   var scene = this.scene;
 
-  //begin scene render, send matrices over to shader uniform
   scene.begin();
 
-    //Send Time Variable over to GPU
-    scene.shader.setUniformFloat("u_time", scene.time )
-
     objA.frame.rotateX(scene.time);
-   // objB.frame.rotateX(-scene.time);
+    //objB.frame.rotateX(-scene.time);
 
-    //draw objects to scene
     scene.draw(objA);
     scene.draw(objB);
 
-    for (var i =0;i<100;++i){
-    	var amt = i/100;
-    	//var pos = GFX.Vector.Lerp( objA.frame.position, objB.frame.position, amt );
-    	var tmp = GFX.Mesh.Frame;
-    	//tmp.frame.position = pos;
-    	//tmp.frame.rotation = GFX.Quaternion.Slerp( objA.frame.rotation, objB.frame.rotation, amt );
-    	tmp.frame = GFX.Frame.FromTo(objA.frame, objB.frame, amt);
-    	scene.draw(tmp);
+    var tmp = GFX.Mesh.Frame;
+
+    for (var i =0;i<=10;++i){
+    	var amt = i/10;
+    	var fa = GFX.Frame.FromTo(objA.frame, objB.frame, amt);
+    	for (var j=0;j<=10;++j){
+    		var rel = new GFX.Frame();
+    		var fb = new GFX.Frame();
+    		rel.position.set(0,j/10,0);
+    		rel.rotation.setAxisAngle(new GFX.Vector(0,1,0), Math.PI * j/10 * Math.sin(scene.time));
+    		tmp.frame = fa.mult(rel);
+    		scene.draw(tmp);
+    	}
     }
 
   scene.end();
