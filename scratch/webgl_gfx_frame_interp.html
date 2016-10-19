@@ -1,0 +1,138 @@
+<html>
+
+<!--  
+
+author: wolftype 
+license: MIT
+
+   Example use of GFX.js (http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js)
+
+   An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
+
+   With Context, Vectors, Matrices, Quaternions, Frames, Scenes and Shaders
+
+   How to use: 
+
+      <html>
+      <script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
+      
+      var app = new GFX.App();
+
+      app.onInit() = function(){
+      //initialize GL objects and buffers
+      }
+
+      app.onRender() = function(){
+      //drawing routines
+      }
+
+      <script id = "gfxvert" type="text/glsl">
+      //vertex shader code
+      </script>
+
+      <script id = "gfxfrag" type="text/glsl">
+      //fragment shader code
+      </script>
+      
+      <body onload = "app.start()">
+      <canvas id = "gfxcanvas" width = "640" height = "480"></canvas>
+      </body>
+      </html>
+--> 
+
+
+<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js">
+//	
+
+</script> 
+
+<script type="text/javascript">
+
+
+var app = new GFX.App();
+var objA;
+var objB;
+
+app.onInit = function(){
+
+  objA = new GFX.Mesh( GFX.Mesh.Frame );
+  objB = new GFX.Mesh( GFX.Mesh.Frame );
+
+  objA.frame.position.set(-2,0,0);
+  objB.frame.position.set(2,0,0);
+
+  this.scene.color = [1.0,0.0,1.0,1.0];
+}
+
+
+app.onRender = function() {
+
+  var scene = this.scene;
+
+  scene.begin();
+
+    objA.frame.rotateX(scene.time);
+    objB.frame.rotateY(-scene.time);
+
+    scene.draw(objA);
+    scene.draw(objB);
+
+    var tmp = GFX.Mesh.Frame;
+
+    for (var i =0;i<=100;++i){
+    	var amt = i/100;
+    	tmp.frame = GFX.Frame.FromTo(objA.frame, objB.frame, amt);
+      scene.draw(tmp);
+    }
+
+  scene.end();
+}
+
+</script>
+
+<!-- VERTEX SHADER -->
+<script id="gfxvert" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  attribute vec3 position;      //Position
+  attribute vec3 color;         //Color
+
+  uniform mat4 model;           //Model Matrix
+  uniform mat4 view;            //View Matrix
+  uniform mat4 projection;      //Projection Matrix
+
+  varying vec3 vcolor;
+
+  void main() {
+    vcolor = color;
+    gl_Position = projection * view * model * vec4(position, 1.0);
+    gl_PointSize = 10.0;
+  }
+</script>
+
+
+<!-- FRAGMENT SHADER -->
+<script id="gfxfrag" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform float u_time;
+
+  varying vec3 vcolor;
+
+  void main() {
+    gl_FragColor = vec4(vcolor,1.0);
+  }
+</script>
+
+<body onload=app.start()>
+<center>
+<canvas id="gfxcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
+</center>
+</body>
+</html>

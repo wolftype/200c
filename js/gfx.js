@@ -136,7 +136,7 @@ GFX.Vector.prototype = {
 	},
 
 	hom: function(){
-		return new GFX.Vector4(x,y,z,1);
+		return new GFX.Vector4(this.x,this.y,this.z,1);
 	}
 		
 }
@@ -148,7 +148,7 @@ GFX.Vector.Lerp = function( va, vb, amt){
 
 /// 4D Vector Operations
 GFX.Vector4 = function(x,y,z,w){
-	set(x,y,z,w)
+	this.set(x,y,z,w)
 }
 
 GFX.Vector4.prototype = {
@@ -251,13 +251,12 @@ GFX.Matrix.prototype = {
 	/// v is a vec4, ith result is a dot product of vector with ith row of matrix
 	multVec: function( v ){
 		var m = this.val;
-		var v = v.val;
-		return new GFX.Vector4([
-			m[0]*v[0]+m[1]*v[1]+m[2]*v[2]+m[3]*v[3],
-			m[4]*v[0]+m[5]*v[1]+m[6]*v[2]+m[7]*v[3],
-			m[8]*v[0]+m[9]*v[1]+m[10]*v[2]+m[11]*v[3],
-			m[12]*v[0]+m[13]*v[1]+m[14]*v[2]+m[15]*v[3],						
-		]);
+		return new GFX.Vector4(
+			m[0]*v.x+m[1]*v.y+m[2]*v.z+m[3]*v.w,
+			m[4]*v.x+m[5]*v.y+m[6]*v.z+m[7]*v.w,
+			m[8]*v.x+m[9]*v.y+m[10]*v.z+m[11]*v.w,
+			m[12]*v.x+m[13]*v.y+m[14]*v.z+m[15]*v.w						
+		);
 	},
 
 	 /// row-major to column-major
@@ -306,7 +305,7 @@ GFX.Matrix.prototype = {
 
 	 /// inverse
 	 inverse: function(){
-
+	 	var m = this.val;
 	 	var d = this.det();
 	 	//cofactors (c_{column, row} )
 	 	var c11 = this.minor([m[5],m[6],m[7], m[9],m[10],m[11],  m[13],m[14],m[15]]);
@@ -456,6 +455,10 @@ GFX.Quaternion.prototype = {
 		return this;		
 	},
 
+	copy: function(q){
+		this.set(q.w,q.x,q.y,q.z);
+	},
+
 	setAxisAngle: function(axis, angle){
 		var theta = angle/2.0;
 		var s = Math.sin(theta);
@@ -463,6 +466,34 @@ GFX.Quaternion.prototype = {
 		this.set( Math.cos(theta), v.x, v.y, v.z);
 		return this;
 	},
+
+	setEuler: function(yaw,pitch,roll){
+
+		/* Below is shorthand for::
+
+		var qyaw = new GFX.Quaternion();
+		var qpitch = new GFX.Quaternion();
+		var qroll = new GFX.Quaternion();
+
+		qyaw.setAxisAngle( new GFX.Vector(0,1,0), yaw);
+		qpitch.setAxisAngle( new GFX.Vector(1,0,0), pitch);
+		qroll.setAxisAngle( new GFX.Vector(0,0,1), roll);
+
+		this.copy( qyaw.mult(qpitch).mult(qroll) );
+
+		*/
+
+		var cy = Math.cos(yaw/2.0);
+		var sy = Math.sin(yaw/2.0);
+		var cp = Math.cos(pitch/2.0);
+		var sp = Math.sin(pitch/2.0);
+		var cr = Math.cos(roll/2.0);
+		var sr = Math.sin(roll/2.0);
+
+		this.set( cr*cp*cy +sr*sp*sy,  cr*sp*cy + sr*cp*sy, cr*cp*sy - sr*sp*cy, sr*cp*cy - cr*sp*sy  );
+		return this;
+	},
+
 
 	/// feed in unit vectors and amt, returns quaternion that takes v1 to v2
 	setRelative: function(v1, v2, amt){
@@ -541,15 +572,21 @@ GFX.Quaternion.Slerp = function(qa, qb, amt){
 	var q = new GFX.Quaternion();
 	//rotation which takes this to q:
 	var rel = qb.mult(qa.inverse());
+	rel = rel.unit();
+	//the axis
+	var axis = new GFX.Vector(rel.x, rel.y, rel.z);	
 	//the angle
 	var theta = 2.0*Math.acos(rel.w);
-	//the axis
-	var axis = new GFX.Vector(rel.x, rel.y, rel.z);
+	//theta = 2.0 * Math.atan2( axis.norm(), rel.w)
+
 	//normalized:
 	axis = axis.unit();
+
+	q.setAxisAngle(axis,theta*amt);
 	//multiply by starting qa
-	return qa.mult( q.setAxisAngle(axis,theta*amt) );
-	///SAME AS THIS FASTER METHOD:
+	return q.mult(qa);
+	
+	///Above is SAME AS THIS FASTER METHOD:
 	//var st = Math.sin(amt*theta/2.0);
 	//return qa.scalarMult( Math.sin( (1-amt) * theta/2.0 ) ).add( qb.scalarMult(st) ).scalarMult(1/Math.sin(theta/2.0));
 }
@@ -604,17 +641,17 @@ GFX.Frame.prototype = {
 
 	//rotate Z axis towards t
 	setTargetX: function(t){
-		return this.rotation.setRelative( new GFX.Vector(1,0,0), t.sub(this.position).unit(), 1.0);
+		this.rotation.setRelative( new GFX.Vector(1,0,0), t.sub(this.position).unit(), 1.0);
 	},
 
 	//rotate Z axis towards t
 	setTargetY: function(t){
-		return this.rotation.setRelative( new GFX.Vector(0,1,0), t.sub(this.position).unit(), 1.0);
+		this.rotation.setRelative( new GFX.Vector(0,1,0), t.sub(this.position).unit(), 1.0);
 	},
 
 	//rotate Z axis towards t
 	setTargetZ: function(t){
-		return this.rotation.setRelative( new GFX.Vector(0,0,1), t.sub(this.position).unit(), 1.0);
+		this.rotation.setRelative( new GFX.Vector(0,0,1), t.sub(this.position).unit(), 1.0);
 	},
 
 	//"multiply" by another frame, to get this frame + relative transformation
@@ -632,7 +669,7 @@ GFX.Frame.prototype = {
 		var r = rmat.val;
 		var s = this.scale;
 		var t = this.position;
-		var m =  GFX.Matrix.translation(t.x,t.y,t.z).mult( rmat ).mult( GFX.Matrix.scale(s.x,s.y,s.z) );
+		//var m =  GFX.Matrix.translation(t.x,t.y,t.z).mult( rmat ).mult( GFX.Matrix.scale(s.x,s.y,s.z) );
 		var m2 = new GFX.Matrix([
 			s.x*r[0], s.y*r[1], s.z*r[2],  t.x,
 			s.x*r[4], s.y*r[5], s.z*r[6],  t.y,
@@ -656,6 +693,7 @@ GFX.Frame.FromTo = function(fa,fb,amt){
 
 /// Camera has focallength, eye separation, and frame of reference
 GFX.Camera = function(){
+	this.fovy = 45;								//field of view
 	this.focalLength = 100;						//parallax merge point
 	this.eyesep = .3;							//eye separation
 	this.frame = new GFX.Frame(0,0,5);		    //position and orientation
@@ -846,7 +884,6 @@ GFX.Buffer.prototype = {
 };
 
 GFX.Mesh = function( mesh ){
-	console.log("instance");
 	this.frame = new GFX.Frame();	
 	if (mesh){
 		this.useElements = mesh.useElements;
@@ -971,7 +1008,7 @@ GFX.Scene.prototype = {
 	                                   this.camera.frame.y() );									//up
 
 		//Projection Matrix
-	    var projection = GFX.Matrix.perspective(45, this.width/this.height, 0.1, 100.0);
+	    var projection = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);
   
 
 	    //Send Matrices over to GPU (transposed because GLSL matrices are column major)
@@ -1019,7 +1056,37 @@ GFX.Scene.prototype = {
 	/// Stop Rendering Scene
 	end: function(){
 		this.shader.unbind();
-	}
+	},
+
+	/// Calculate screen pixel coordinates of a world coordinate v
+	project: function(v){
+		var model = this.frame.matrix();
+		var view = GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
+	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
+	                                   this.camera.frame.y() );									//up
+		var proj = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);
+		var mvp = proj.mult(view).mult(model);
+
+		var tv = mvp.multVec(v.hom());
+		tv = tv.divide(tv.w);
+
+		return new GFX.Vector( this.width * (1+tv.x)/2, this.height * (1+tv.y)/2, (1+tv.z)/2);
+	},
+
+	/// Calculate world coordinates of a screen pixel coordinate v
+	unproject: function(v){
+		var model = this.frame.matrix();
+		var view = GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
+	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
+	                                   this.camera.frame.y() );									//up
+		var proj = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);
+		var pmv = proj.mult(view).mult(model);//view.mult(model).mult(proj);
+
+		var vp = new GFX.Vector4( 2*(v.x/this.width)-1, 2*(v.y/this.height)-1, 2*(v.z)-1,1 );
+		var tv = pmv.inverse().multVec(vp);
+		tv = tv.divide(tv.w);
+		return new GFX.Vector( tv.x, tv.y, tv.z );
+	}	
 }
 
 
@@ -1041,6 +1108,7 @@ GFX.Mouse.prototype = {
 GFX.App = function(){
 	this.mouse = new GFX.Mouse();
 	this.rect;
+	this.canvas;
 }
 GFX.App.prototype = {
 
@@ -1048,14 +1116,12 @@ GFX.App.prototype = {
 
 	/// Defaults to finding element called "gfxcanvas" "gfxvert" and "gfxfrag"
 	_init: function(){
-		var canvas = document.getElementById("gfxcanvas");
-		GFX.InitContext(canvas);
-		canvas.addEventListener("mousedown",this);		
-		canvas.addEventListener("mousemove",this);		
-		canvas.addEventListener("mouseup",this);	
-		canvas.addEventListener("mouseleave",this);
-
-		this.rect = canvas.getBoundingClientRect();	
+		this.canvas = document.getElementById("gfxcanvas");
+		GFX.InitContext(this.canvas);
+		this.canvas.addEventListener("mousedown",this);		
+		this.canvas.addEventListener("mousemove",this);		
+		this.canvas.addEventListener("mouseup",this);	
+		this.canvas.addEventListener("mouseleave",this);
 
  		var vertScript = document.getElementById("gfxvert").text;
   		var fragScript = document.getElementById("gfxfrag").text;
@@ -1080,6 +1146,7 @@ GFX.App.prototype = {
  	/// The recursive call loop
  	_mainloop: function(){
  		RequestAnimFrame( this._mainloop.bind(this) ); //must bind function to "this" instance so it doesn't look in window's methods
+		this.rect = this.canvas.getBoundingClientRect();
  		this.onRender();
  	},
 
@@ -1092,9 +1159,9 @@ GFX.App.prototype = {
  				this.mouse.frame.rotation = this.scene.frame.rotation;
  				break;
  			case "mousemove":
+ 			 	this.mouse.x = e.x - this.rect.left;
+ 				this.mouse.y = this.rect.height - (e.y - this.rect.top);
  				if (this.mouse.down){
- 					this.mouse.x = e.x - this.rect.left;
- 					this.mouse.y = this.rect.height - (e.y - this.rect.top);
  					this.mouse.dx = this.mouse.x - this.mouse.lastX;
  					this.mouse.dy = this.mouse.y - this.mouse.lastY;
 
