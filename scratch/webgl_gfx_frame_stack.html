@@ -51,15 +51,11 @@ license: MIT
 
 var app = new GFX.App();
 var objA;
-var mouseZ;
 
 app.onInit = function(){
 
-  objA = new GFX.Mesh( GFX.Mesh.Frame );
-  objB = new GFX.Mesh( GFX.Mesh.Frame );
   this.scene.color = [1.,1.,1.,1.0];
-
-  mouseZ = document.getElementById("mouseZ");
+  objA = new GFX.Mesh( GFX.Mesh.Frame );
 
 }
 
@@ -69,15 +65,23 @@ app.onRender = function() {
   var scene = this.scene;
   var mouse = this.mouse;
 
-  var wm = scene.unproject( new GFX.Vector( mouse.x, mouse.y, .9 + mouseZ.value/1000) );
- 
-  objA.frame.position = wm;
-  objB.frame.setTargetZ( wm );
-
   scene.begin();
 
-    scene.draw(objA);
-    scene.draw(objB);
+    for (var i =0;i<=30; ++i){
+      var t = i/30;
+      scene.matrix.push();
+
+        //try uncommenting line 75, and commenting out line 78:
+        //scene.matrix.translate(2*t,0,0);
+        scene.matrix.rotate(2*Math.PI*t,0,0,1);
+        scene.matrix.translate(2,0,0);
+        scene.matrix.scale(t,t,t);
+
+        scene.draw(objA);
+
+      scene.matrix.pop();
+    }
+
 
   scene.end();
 }
@@ -127,8 +131,6 @@ app.onRender = function() {
 <body onload=app.start()>
 <center>
 <canvas id="gfxcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
-<br>
-<input type="range" id ="mouseZ"> (mouseZ) </input>
 </center>
 </body>
 </html>

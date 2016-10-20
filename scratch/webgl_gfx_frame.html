@@ -61,7 +61,7 @@ app.onInit = function(){
   objA.frame.position.set(-2,0,0);
   objB.frame.position.set(2,0,0);
 
-  this.scene.color = [1.0,0.0,1.0,1.0];
+  this.scene.color = [1.0,1.0,1.0,1.0];
 }
 
 
@@ -79,8 +79,8 @@ app.onRender = function() {
 
     var tmp = GFX.Mesh.Frame;
 
-    for (var i =0;i<=10;++i){
-    	var amt = i/10;
+    for (var i =0;i<=1;++i){
+    	var amt = i/1;
     	var fa = GFX.Frame.FromTo(objA.frame, objB.frame, amt);
     	for (var j=0;j<=10;++j){
     		

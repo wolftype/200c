@@ -92,6 +92,10 @@ GFX.Vector = function(x,y,z){
 GFX.Vector.prototype = {
 	
 	constructor: GFX.Vector,
+
+	copy: function(){
+		return new GFX.Vector(this.x, this.y, this.z);
+	},
 	
 	set: function(x,y,z){
 		this.x = x || 0;
@@ -154,7 +158,11 @@ GFX.Vector4 = function(x,y,z,w){
 GFX.Vector4.prototype = {
 	
 	constructor: GFX.Vector4,
-	
+
+	copy: function(){
+		return new GFX.Vector4(this.x, this.y, this.z, this.w);
+	},
+
 	set: function(x,y,z,w){
 
 		this.x = x || 0;
@@ -214,6 +222,10 @@ GFX.Matrix = function(a){
 GFX.Matrix.prototype = {
 
 	constructor: GFX.Matrix,
+
+	copy: function(){
+		return new GFX.Matrix( this.val );
+	},
 
 	set: function( a ){
 		this.val = a;
@@ -365,6 +377,13 @@ GFX.Matrix.translation = function(tx,ty,tz){
 	]);
 };
 
+/// Rotation Matrix
+GFX.Matrix.rotation = function(angle,x,y,z){
+	var axis = new GFX.Vector(x,y,z);
+	var q = GFX.Quaternion.AxisAngle(axis.unit(),angle)
+	return q.matrix();
+};
+
 /// Scale Matrix
 GFX.Matrix.scale = function(sx,sy,sz){
 	return new GFX.Matrix([
@@ -446,6 +465,10 @@ GFX.Quaternion = function(w,x,y,z){
 GFX.Quaternion.prototype = {
 
 	constructor: GFX.Quaternion,
+
+	copy: function(){
+		return new GFX.Quaternion(this.w, this.x, this.y, this.z);
+	},
 	
 	set: function(w,x,y,z){
 		this.w = w || 0;
@@ -453,10 +476,6 @@ GFX.Quaternion.prototype = {
 		this.y = y || 0;
 		this.z = z || 0;
 		return this;		
-	},
-
-	copy: function(q){
-		this.set(q.w,q.x,q.y,q.z);
 	},
 
 	setAxisAngle: function(axis, angle){
@@ -606,13 +625,35 @@ GFX.Frame = function(x,y,z){
 GFX.Frame.prototype = {
 	constructor: GFX.Frame,
 
-	/// equivalent to this.rotation.apply( new GFX.Vector(1,0,0) 
+	copy: function(){
+		var f = new GFX.Frame();
+		f.position = this.position.copy();
+		f.rotation = this.rotation.copy();
+		f.scale = this.scale.copy();
+		return f;
+	},
+
+	translate: function(x,y,z){
+		this.position = this.position.add( new GFX.Vector(x,y,z));
+	},
+
+	/// Rotate by theta around Global X,Y,Z
+	rotate(theta, x, y, z){
+		var axis = new GFX.Vector(x,y,z);
+		this.rotation = this.rotation.mult(GFX.Quaternion.AxisAngle(axis.unit(), theta));
+	},
+
+	scale: function(x,y,z){
+		this.scale.set(x,y,z);
+	},
+
+	/// equivalent to this.rotation.apply( new GFX.Vector(1,0,0) )
 	x: function(){
 		var q = this.rotation;
 		return new GFX.Vector( 1-(2*(q.y*q.y + q.z*q.z)), 2*(q.x*q.y + q.w*q.z), 2*(q.x*q.z - q.w*q.y) );
 	},
 
-	/// equivalent to this.rotation.apply( new GFX.Vector(0,1,0) 
+	/// equivalent to this.rotation.apply( new GFX.Vector(0,1,0) )
 	y: function(){
 		var q = this.rotation;		
 		return new GFX.Vector( 2*(q.x*q.y - q.w*q.z), 1-(2*(q.x*q.x + q.z*q.z)), 2*(q.y*q.z+q.w*q.x) );
@@ -624,17 +665,18 @@ GFX.Frame.prototype = {
 		return new GFX.Vector( 2*(q.x*q.z + q.w*q.y), 2*(q.y*q.z-q.w*q.x), 1-(2*(q.x*q.x + q.y*q.y)) );
 	},
 
-	//pitch
+
+	/// Rotate around Local X Axis
 	rotateX: function(rad){
 		this.rotation.setAxisAngle( this.x(), rad );
 	},
 
-	//yaw
+	//Rotate around Local Y Axis
 	rotateY: function(rad){
 		this.rotation.setAxisAngle( this.y(), rad );
 	},
 
-	//roll
+	//Rotate around Local Z axis
 	rotateZ: function(rad){
 		this.rotation.setAxisAngle( this.z(), rad );
 	},
@@ -653,6 +695,7 @@ GFX.Frame.prototype = {
 	setTargetZ: function(t){
 		this.rotation.setRelative( new GFX.Vector(0,0,1), t.sub(this.position).unit(), 1.0);
 	},
+
 
 	//"multiply" by another frame, to get this frame + relative transformation
 	mult: function(relFrame){
@@ -683,6 +726,7 @@ GFX.Frame.prototype = {
 
 };
 
+/// Interpolate Frame fa to Frame fb by amt
 GFX.Frame.FromTo = function(fa,fb,amt){
 	var f = new GFX.Frame();
 	f.position = GFX.Vector.Lerp( fa.position, fb.position, amt);
@@ -931,7 +975,7 @@ GFX.Mesh.prototype = {
 
 };
 
-/// Classic Mesh Buffers
+/// Useful Mesh Buffers
 GFX.Mesh.MakeFrame = function(){
 
   var buffer = new GFX.Mesh();
@@ -967,6 +1011,41 @@ GFX.Mesh.Make = function(){
 	GFX.Mesh.MakeFrame();
 }
 
+GFX.MatrixStack = function(){
+	this.stack = [ GFX.Matrix.identity() ];
+};
+
+GFX.MatrixStack.prototype = {
+	constructor: GFX.MatrixStack,
+
+	set: function(m){
+		this.last().set(m.val);
+	},
+
+	last: function(){
+		return this.stack[ this.stack.length-1];
+	},
+
+	push: function(){
+		this.stack.push( this.stack[ this.stack.length-1].copy() );
+	},
+
+	translate: function(x,y,z){
+		this.last().set(this.last().mult( GFX.Matrix.translation(x,y,z) ).val);
+	},
+
+	rotate: function(angle,x,y,z){
+		this.last().set(this.last().mult( GFX.Matrix.rotation(angle,x,y,z)).val);
+	},
+
+	scale: function(sx,sy,sz){
+		this.last().set(this.last().mult( GFX.Matrix.scale(sx,sy,sz)).val);
+	},
+
+	pop: function(){
+		this.stack.pop();
+	}
+};
 
 /// Scene: has width, height, background color, camera, shader, and time
 /// To be created after GFX.Context() has already defined a global GL context
@@ -979,6 +1058,7 @@ GFX.Scene = function(width, height){
 	this.color = [.4,.4,.4,1.0]; 			    	///< Background Color
 	this.time = 0.0;							    ///< Time: will increment every onRender()
 	this.frame = new GFX.Frame();					///< Scene's base model transform
+	this.matrix = new GFX.MatrixStack();			///< Push / Pop Matrix Stack
 };
 
 GFX.Scene.prototype = {
@@ -999,8 +1079,7 @@ GFX.Scene.prototype = {
 		 
 		this.time += .02;
 
-	    //Model Matrix
-	    var model = this.frame.matrix();//GFX.Matrix.identity();
+	    var model = GFX.Matrix.identity();
 
   		//View Matrix
 	    var view =  GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
@@ -1025,7 +1104,7 @@ GFX.Scene.prototype = {
 	/// Draw a Mesh
 	draw: function(mesh){
 
-		var m = this.frame.matrix().mult( mesh.frame.matrix() );
+		var m = this.frame.matrix().mult( this.matrix.last() ).mult( mesh.frame.matrix() );
 		this.shader.setUniformMatrix("model", m.transpose().val );
 
     	if (mesh.useColor){
@@ -1080,7 +1159,7 @@ GFX.Scene.prototype = {
 	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
 	                                   this.camera.frame.y() );									//up
 		var proj = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);
-		var pmv = proj.mult(view).mult(model);//view.mult(model).mult(proj);
+		var pmv = proj.mult(view).mult(model);
 
 		var vp = new GFX.Vector4( 2*(v.x/this.width)-1, 2*(v.y/this.height)-1, 2*(v.z)-1,1 );
 		var tv = pmv.inverse().multVec(vp);
@@ -1110,6 +1189,7 @@ GFX.App = function(){
 	this.rect;
 	this.canvas;
 }
+
 GFX.App.prototype = {
 
 	constructor: GFX.App,
