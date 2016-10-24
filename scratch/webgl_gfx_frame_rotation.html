@@ -41,7 +41,7 @@ license: MIT
 --> 
 
 
-<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js">
+<script src = "../js/gfx_v02.js">
 //	
 
 </script> 
@@ -73,7 +73,7 @@ app.onRender = function() {
 
   scene.begin();
 
-    objA.frame.rotation.setEuler(yaw.value/100 * 2*Math.PI,pitch.value/100* 2*Math.PI,roll.value/100* 2*Math.PI);
+    objA.frame.orientation.setEuler(yaw.value/100 * 2*Math.PI,pitch.value/100* 2*Math.PI,roll.value/100* 2*Math.PI);
     scene.draw(objA);
 
   scene.end();

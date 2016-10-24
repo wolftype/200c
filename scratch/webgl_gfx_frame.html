@@ -5,43 +5,16 @@
 author: wolftype 
 license: MIT
 
-   Example use of GFX.js (http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js)
+   Example use of GFX.js 
 
    An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
 
    With Context, Vectors, Matrices, Quaternions, Frames, Scenes and Shaders
 
-   How to use: 
-
-      <html>
-      <script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
-      
-      var app = new GFX.App();
-
-      app.onInit() = function(){
-      //initialize GL objects and buffers
-      }
-
-      app.onRender() = function(){
-      //drawing routines
-      }
-
-      <script id = "gfxvert" type="text/glsl">
-      //vertex shader code
-      </script>
-
-      <script id = "gfxfrag" type="text/glsl">
-      //fragment shader code
-      </script>
-      
-      <body onload = "app.start()">
-      <canvas id = "gfxcanvas" width = "640" height = "480"></canvas>
-      </body>
-      </html>
 --> 
 
 
-<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js">
+<script src = "../js/gfx_v02.js">
 //	
 
 </script> 
@@ -87,8 +60,8 @@ app.onRender = function() {
     		var rel = new GFX.Frame();
     		
     		rel.position.set(0,j/10,0);
-    		rel.rotation.setAxisAngle(new GFX.Vector(0,1,0), Math.PI * j/10 * Math.sin(scene.time));
-    		rel.scale.set(1-j/10,1-j/10,1-j/10);
+    		rel.orientation.setAxisAngle(new GFX.Vector(0,1,0), Math.PI * j/10 * Math.sin(scene.time));
+    		rel.size.set(1-j/10,1-j/10,1-j/10);
     		
     		tmp.frame = fa.mult(rel);
     		scene.draw(tmp);

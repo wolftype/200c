@@ -24,7 +24,7 @@
 	</head>
 	<body>
 		<script src="../lib/js/head.min.js"></script>
-		<script src="../js/reveal.js"></script>
+		<script src="../js/ext/reveal.js"></script>
 		<script type="text/javascript" src="https://rawgit.com/patriciogonzalezvivo/glslCanvas/master/build/GlslCanvas.js"></script>
 		<div class="reveal">
 			<div class="slides">
@@ -270,9 +270,9 @@
 					### Complex Numbers
 					#### The Exponential Form
 
-					$$ e^{i\theta}=\mbox{cos}\theta+\mbox{sin}\theta$$
-					$$ re^{i\theta}=r(\mbox{cos}\theta+\mbox{sin}\theta)$$
-					$$ (re^{i\theta})^{n}=r^{n}e^{ni\theta} =r^{n}(\mbox{cos}(n\theta)+\mbox{sin}(n\theta)) $$
+					$$ e^{i\theta}=\mbox{cos}\theta+i\mbox{sin}\theta$$
+					$$ re^{i\theta}=r(\mbox{cos}\theta+i\mbox{sin}\theta)$$
+					$$ (re^{i\theta})^{n}=r^{n}e^{ni\theta} =r^{n}(\mbox{cos}(n\theta)+i\mbox{sin}(n\theta)) $$
 					</script>
 					</section>	
 
@@ -359,8 +359,8 @@
 				<script type "text/template">
 				### Encoding Frames of Reference (i.e. "Pose")
 				* **position**: A 3D Vector 
-				* **rotation**: A Quaternion
-				* **scale**: A 3D Vector (scale in each direction) 
+				* **orientation**: A Quaternion
+				* **size**: A 3D Vector (for scaling in each direction) 
 				</script>
 				</section>
 

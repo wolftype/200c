@@ -5,43 +5,16 @@
 author: wolftype 
 license: MIT
 
-   Example use of GFX.js (http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js)
+   Example use of GFX.js
 
    An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
 
    With Context, Vectors, Matrices, Quaternions, Frames, Scenes and Shaders
 
-   How to use: 
-
-      <html>
-      <script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
-      
-      var app = new GFX.App();
-
-      app.onInit() = function(){
-      //initialize GL objects and buffers
-      }
-
-      app.onRender() = function(){
-      //drawing routines
-      }
-
-      <script id = "gfxvert" type="text/glsl">
-      //vertex shader code
-      </script>
-
-      <script id = "gfxfrag" type="text/glsl">
-      //fragment shader code
-      </script>
-      
-      <body onload = "app.start()">
-      <canvas id = "gfxcanvas" width = "640" height = "480"></canvas>
-      </body>
-      </html>
 --> 
 
 
-<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js">
+<script src = "../js/gfx_v02.js">
 //	
 
 </script> 
@@ -55,12 +28,13 @@ var mouseZ;
 
 app.onInit = function(){
 
-  objA = new GFX.Mesh( GFX.Mesh.Frame );
-  objB = new GFX.Mesh( GFX.Mesh.Frame );
+  objA = GFX.Mesh.MakeFrame();
+  objB = GFX.Mesh.MakeFrame();
   this.scene.color = [1.,1.,1.,1.0];
 
   mouseZ = document.getElementById("mouseZ");
-
+  this.scene.camera.frame.position.set(5,0,0);
+  this.scene.camera.setTarget( new GFX.Vector(0,0,0));
 }
 
 
@@ -69,10 +43,15 @@ app.onRender = function() {
   var scene = this.scene;
   var mouse = this.mouse;
 
+  //scene.frame.scale.set( Math.sin(scene.time), 1, 1 );
+  var t = scene.time;
+  scene.camera.frame.position.set( 5 * Math.sin(t), 5* Math.cos(t),0);
+  scene.camera.setTarget( new GFX.Vector(0,0,0));
+
   var wm = scene.unproject( new GFX.Vector( mouse.x, mouse.y, .9 + mouseZ.value/1000) );
  
   objA.frame.position = wm;
-  objB.frame.setTargetZ( wm );
+  //objB.frame.setTargetZ( wm );
 
   scene.begin();
 
