@@ -1181,6 +1181,15 @@ GFX.Scene.prototype = {
 		//Start a new matrix stack
 		this.matrix = new GFX.MatrixStack();
 
+		//calculate matrices and upload to shader
+		this.uploadMatrices(this.shader);
+
+    	//resize to canvas width and height
+    	this.clear();
+    	GL.viewport(0,0, this.width, this.height);	
+	},
+
+	uploadMatrices(shader){
 	    var model = GFX.Matrix.identity();
 
 	    var view =  GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
@@ -1191,14 +1200,10 @@ GFX.Scene.prototype = {
   
 
 	    //Send Matrices over to GPU (transposed because GLSL matrices are column major)
-	    this.shader.bind();
-	    this.shader.setUniformMatrix("model", model.transpose().val );		
-	    this.shader.setUniformMatrix("view", view.transpose().val );
-	    this.shader.setUniformMatrix("projection", projection.transpose().val );
-
-    	//resize to canvas width and height
-    	this.clear();
-    	GL.viewport(0,0, this.width, this.height);	
+	    shader.bind();
+	    shader.setUniformMatrix("model", model.transpose().val );		
+	    shader.setUniformMatrix("view", view.transpose().val );
+	    shader.setUniformMatrix("projection", projection.transpose().val );
 	},
 
 	/// Draw a Mesh

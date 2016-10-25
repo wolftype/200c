@@ -45,8 +45,8 @@ app.onRender = function() {
 
   //scene.frame.scale.set( Math.sin(scene.time), 1, 1 );
   var t = scene.time;
-  scene.camera.frame.position.set( 5 * Math.sin(t), 5* Math.cos(t),0);
-  scene.camera.setTarget( new GFX.Vector(0,0,0));
+// scene.camera.frame.position.set( 5 * Math.sin(t), 5* Math.cos(t),0);
+// scene.camera.setTarget( new GFX.Vector(0,0,0) );
 
   var wm = scene.unproject( new GFX.Vector( mouse.x, mouse.y, .9 + mouseZ.value/1000) );
  
