@@ -1,9 +1,11 @@
 ---
 layout: page
-category: Framework
-tag: 
+category: Tidbits
 ---
-<script type="text/javascript" src = "{{site.baseurl}}/js/three.js"></script>
+
+Creating a context and rendering a mesh in THREE.js
+
+<script type="text/javascript" src = "{{site.baseurl}}/js/ext/three.js"></script>
 
 What follows is slightly modified from the [introduction to creating scenes](http://threejs.org/docs/index.html#Manual/Introduction/Creating_a_scene) on the [Three.js](http://threejs.org/) website itself. 
 

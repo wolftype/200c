@@ -3,10 +3,10 @@ author: wolftype
 license: MIT
 
    GFX.js (http://rawgit.com/wolftype/200c/gh-pages/js/gfx_v02.js)
+   		An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
 
-   An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
-
-   With Context, Vectors, Matrices, Quaternions, Frames, Scenes and Shaders
+   With: Context, Vectors, Matrices, Quaternions, Frames, Meshes, Buffers, Textures,
+   Scenes and Shaders
 
    How to use: 
 
@@ -1368,7 +1368,3 @@ GFX.App.prototype = {
  		}
  	}
 }
-	
-
-
-

@@ -5,28 +5,22 @@ category: syllabus
 
 A schedule of topics we will cover:
 
-#### Week One: Pipeline
+#### Week One and Two: Pipeline
 Contexts and Loops
 Shaders and Buffers
 
-#### Week Two: Transformations I
-Matrices
-Quaternions
+#### Week Three and Four: Transformations
+Matrices, Quaternions, Geometric Algebra
 
-#### Week Three: Transformations II
-Geometric Algebra
+#### Week Five: Transformations
 Spherical Trigonometry
 
-#### Week Four: Transformations III
-Forward Kinematics
-Basic Physics
+#### Week Six: Transformations III
+Kinematics, Physics
 
 #### Shapes
-
 Curves and Surfaces 
 Meshes
-
-#### Midterm Projects
 
 #### Color and Lighting
 RGB, HSV
@@ -54,3 +48,32 @@ Projective and Conformal Geometry
 Environment for the AlloSphere
 Environment for the Cuttlefish Display
 Environment for the HTC Vive
+
+Final Projects Due: December 7th
+
+A 10-15 minute presentation with a public-facing
+component:
+
+* A website.
+* A high quality still image.
+
+
+#### Topics:
+
+Abstract artwork
+Voronoi and delaunay triangulation
+Binary space partitions and octrees
+Inverse kinematics and rigging
+Line integral convolution
+Framebuffer effects (e.g. motion blur)
+Other algebras (dual quaternions, motors, plucker coordinates)
+Geometry processing (mesh manipulation techniques)
+Fluid simulations
+Physics simulations
+Volumetric rendering
+Tessellation shaders
+Geometry shaders
+Lighting techniques and Colors
+A Virtual Reality Environment
+Flocking Algorithms
+l-systems

@@ -31,13 +31,13 @@ We will remain programming-language agnostic -- we will use both C++ and javascr
 Each week of 200c consists of a lecture with accompanying online tutorial.  This will be followed by a task
 that we will start together in class.
 
-1-WebGL and Shaders
-2-Matrices and Quaternions
-3-Kinematics
-4-Curves and Surfaces
-5-Fluids and Particle Systems
-6-Color
-7-Higher Dimensions
+1-WebGL and Shaders  
+2-Matrices and Quaternions  
+3-Kinematics  
+4-Curves and Surfaces  
+5-Fluids and Particle Systems  
+6-Color  
+7-Higher Dimensions  
 
 ## So what is this class really about?
 
