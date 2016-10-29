@@ -28,7 +28,7 @@ var objA;
 app.onInit = function(){
 
   this.scene.color = [1.,1.,1.,1.0];
-  objA = new GFX.Mesh( GFX.Mesh.Frame );
+  objA = GFX.Mesh.MakeFrame();
 
 }
 
@@ -39,6 +39,8 @@ app.onRender = function() {
 
   scene.begin();
 
+    objA.frame.orientation.setRotation(scene.time, 0,1,0);
+
     for (var i =0;i<=30; ++i){
       var t = i/30;
       scene.matrix.push();
@@ -46,13 +48,22 @@ app.onRender = function() {
         //try uncommenting line 75, and commenting out line 78:
         //scene.matrix.translate(2*t,0,0);
         scene.matrix.rotate(2*Math.PI*t,0,0,1);
-        scene.matrix.translate(2,0,0);
+        scene.matrix.translate(t,0,0);
         scene.matrix.scale(t,t,t);
 
         scene.draw(objA);
 
       scene.matrix.pop();
     }
+                    
+      scene.matrix.push();
+      for (var i =0;i<=100; ++i){
+            var t = i/100;
+            scene.matrix.rotate(8*Math.PI/100,0,0,1);
+            scene.matrix.translate(t,0,0);
+       //     scene.draw(objA);            
+      }
+      scene.matrix.pop();
 
 
   scene.end();

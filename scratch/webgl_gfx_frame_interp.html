@@ -54,8 +54,12 @@ app.onRender = function() {
 
     var tmp = GFX.Mesh.MakeFrame();
 
-    tmp.useColor = true;
-
+    if ( Math.sin( scene.time) > 0 ) {
+      tmp.useColor = false;
+    } else {
+      tmp.useColor = true;
+    }
+    
     for (var i =1;i<100;++i){
     	var amt = i/100;
     	tmp.frame = GFX.Frame.FromTo(objA.frame, objB.frame, amt);

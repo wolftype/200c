@@ -51,7 +51,7 @@ app.onRender = function() {
   var wm = scene.unproject( new GFX.Vector( mouse.x, mouse.y, .9 + mouseZ.value/1000) );
  
   objA.frame.position = wm;
-  //objB.frame.setTargetZ( wm );
+  objB.frame.setTargetZ( wm );
 
   scene.begin();
 

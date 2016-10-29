@@ -725,17 +725,17 @@ GFX.Frame.prototype = {
 
 	/// Rotate around Local X Axis
 	rotateX: function(rad){
-		this.orientation.setAxisAngle( this.x(), rad );
+		this.orientation = this.orientation.mult(GFX.Quaternion.Rotation(rad,1,0,0));
 	},
 
 	//Rotate around Local Y Axis
 	rotateY: function(rad){
-		this.orientation.setAxisAngle( this.y(), rad );
+		this.orientation = this.orientation.mult(GFX.Quaternion.Rotation(rad,0,1,0));
 	},
 
 	//Rotate around Local Z axis
 	rotateZ: function(rad){
-		this.orientation.setAxisAngle( this.z(), rad );
+		this.orientation = this.orientation.mult(GFX.Quaternion.Rotation(rad,0,0,1));
 	},
 
 	//rotate Z axis towards t
@@ -1012,8 +1012,10 @@ GFX.Mesh = function( mesh ){
 		this.useElements = mesh.useElements;
 		this.useColor = mesh.useColor;
 		this.useUV = mesh.useUV;
+		this.useNormal = mesh.useNormal;
 		this.mode = mesh.mode;
 		this.vertexBuffer = mesh.vertexBuffer;
+		this.normalBuffer = mesh.normalBuffer;
 		this.colorBuffer =  mesh.colorBuffer;
 		this.texBuffer = mesh.texBuffer;
 		this.indexBuffer = mesh.indexBuffer;
@@ -1021,8 +1023,10 @@ GFX.Mesh = function( mesh ){
 		this.useElements = false;
 		this.useColor = false;
 		this.useUV = false;
+		this.useNormal = false;
 		this.mode = GL.TRIANGLES;
 		this.vertexBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
+		this.normalBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
 		this.colorBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
 		this.texBuffer = new GFX.Buffer( GL.ARRAY_BUFFER );
 		this.indexBuffer = new GFX.Buffer( GL.ELEMENT_ARRAY_BUFFER );	
@@ -1067,6 +1071,10 @@ GFX.Mesh.prototype = {
 		this.colorBuffer.load(new Float32Array(colors), hint);
 	},
 
+	loadNormal: function(normals, hint){
+		this.useNormal = true;
+		this.normalBuffer.load(new Float32Array(normals), hint);
+	}
 };
 
 /// Useful Mesh Buffers
@@ -1105,9 +1113,90 @@ GFX.Mesh.MakeFrame = function(){
 
 };
 
+GFX.Mesh.MakeCircle = function(){
+	if (!GFX.Mesh.Circle){
+		console.log("making circle mesh")
+		var buffer = new GFX.Mesh();
+
+		var vertices = []; 
+		for (var i=0;i<=30;++i){
+			var t = i/30.0;
+			vertices.push( Math.cos(Math.PI*2*t), Math.sin(Math.PI*2*t), 0 );
+		}
+
+		buffer.load(vertices); 
+		buffer.mode = GL.LINE_STRIP;
+		buffer.useElements = false;
+
+		GFX.Mesh.Circle = buffer;
+	}
+	return GFX.Mesh.Circle.copy();
+};
+
+GFX.Mesh.MakeSphere = function(){
+	if (!GFX.Mesh.Sphere){
+		console.log("making sphere mesh")
+		var buffer = new GFX.Mesh();
+
+	  	var v = [];
+	  	var idx = [];
+
+	  	var x = new GFX.Vector(1.0,0.0,0.0); //x axis
+	  	var y = new GFX.Vector(0.0,1.0,0.0); //y axis
+	  	var z = new GFX.Vector(0.0,0.0,1.0); //z axis
+
+	  	var quatA = new GFX.Quaternion();
+	  	var quatB = new GFX.Quaternion();
+
+	  	var num = 12;
+	  	var slices = num;
+	  	var stacks = num;
+
+	  	for (var i=0;i<=num;++i){
+	    	for (var j=0; j<num; ++j){
+	    		quatA.setAxisAngle( y, 2.*Math.PI * j/num );
+	    		var axis = quatA.apply(z);
+	      		quatB.setAxisAngle( axis, Math.PI * ((i/num) - .5)  ) ;
+	      		var q = quatB.mult(quatA);
+	      		var vec = q.apply(x);
+	      		v.push(vec.x, vec.y, vec.z);  
+	      		if (i===0 || i===stacks) { break; }
+	    	}
+	  	}
+
+	  	//bottom
+        for (var j = 1; j <= slices; j+=1){
+           var next = j < slices ? j+1 : 1;
+           idx.push(0,j,next,0); 
+        }
+
+		for (var i = 0; i < stacks -1; ++i){
+		 	var a, b;
+		  	for (var j = 0; j < slices; ++j){               
+		     	a = 1 + i * slices + j;
+		      	b =  ( i < stacks - 2) ? a + slices : (v.length/3) - 1;  // Next Higher Latitude or North Pole
+		      	idx.push(a,b); 
+		  	}
+		  	a = 1 + i * slices ;
+		  	b =  ( i < stacks - 2) ? a + slices : (v.length/3) - 1;
+		  	idx.push(a,b); 
+		}
+
+		buffer.load(v,idx); 
+		buffer.loadColor(v);
+		buffer.loadNormal(v);
+		buffer.mode = GL.TRIANGLE_STRIP;//GL.LINE_STRIP;
+		buffer.useElements = true;
+
+		GFX.Mesh.Sphere = buffer;
+	}
+	return GFX.Mesh.Sphere.copy();	
+};
 
 GFX.Mesh.Make = function(){
 	GFX.Mesh.MakeFrame();
+	GFX.Mesh.MakeCircle();
+	GFX.Mesh.MakeSphere();
 }
 
 GFX.MatrixStack = function(){
@@ -1196,8 +1285,7 @@ GFX.Scene.prototype = {
 	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
 	                                   this.camera.frame.y() );									//up
 
-	    var projection = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);
-  
+	    var projection = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);  
 
 	    //Send Matrices over to GPU (transposed because GLSL matrices are column major)
 	    shader.bind();
@@ -1208,9 +1296,14 @@ GFX.Scene.prototype = {
 
 	/// Draw a Mesh
 	draw: function(mesh){
-
+		/// mouse control   *   pushing and popping *  TRS
+		/// scene.frame.matrix * scene.matrixstack * mesh.localtransformation
 		var m = this.frame.matrix().mult( this.matrix.last() ).mult( mesh.frame.matrix() );
 		this.shader.setUniformMatrix("model", m.transpose().val );
+
+	    //for lighting, lets calculate the transposed inverse of the model
+	    // var nm = m.inverse().transpose();
+	    //this.shader.setUniformMatrix("normalMatrix", m.inverse().val );
 
     	if (mesh.useColor){
     		this.shader.enableAttribute("color");
@@ -1218,6 +1311,14 @@ GFX.Scene.prototype = {
 			this.shader.pointAttribute("color",3);		
     	} else {
     	    this.shader.disableAttribute("color");	
+    	}
+    	
+    	if (mesh.useNormal){
+    		this.shader.enableAttribute("normal");
+			mesh.normalBuffer.bind();
+			this.shader.pointAttribute("normal",3);		
+    	} else {
+    		this.shader.disableAttribute("normal");
     	}
 
     	if (mesh.useUV){
@@ -1227,6 +1328,8 @@ GFX.Scene.prototype = {
     	} else {
     		this.shader.disableAttribute("uv");
     	}
+
+
 
 		this.shader.enableAttribute("position");
 		mesh.vertexBuffer.bind();
