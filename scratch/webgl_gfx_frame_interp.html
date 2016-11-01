@@ -46,8 +46,8 @@ app.onRender = function() {
 
   scene.begin();
 
-    objA.frame.rotateX(scene.time);
-    objB.frame.rotateY(-scene.time);
+    objA.frame.rotateX(.1);
+    objB.frame.rotateY(-.1);
 
     scene.draw(objA);
     scene.draw(objB);
