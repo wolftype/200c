@@ -5,7 +5,7 @@
 author: wolftype 
 license: MIT
 
-   Example use of GFX.js 
+   Example use of GFX.js
 
    An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
 
@@ -23,47 +23,56 @@ license: MIT
 
 
 var app = new GFX.App();
-var objA;
-var objB;
+var meshes = [];
+var mouseZ;
+var texture = new GFX.Texture();
+
+var fm;
 
 app.onInit = function(){
 
+  this.scene.camera.frame.position.set(0,5,5);
+  this.scene.camera.setTarget( new GFX.Vector(0,0,0) );
 
-  objA = GFX.Mesh.MakeFrame();
-  objB = GFX.Mesh.MakeFrame();
+  fm = GFX.Mesh.MakeFrame();
+  fm.frame.position.set(0,1,1);
+  fm.frame.setTarget( GFX.Vector.Origin);
 
-  objA.frame.position.set(-2,0,0);
-  objB.frame.position.set(2,0,0);
+  for (var i=0;i<300;++i){
+    var m =  GFX.Mesh.MakeRect() ;
+    m.frame.position.set( -3 + 6*Math.random(), Math.random(), -3+6*Math.random());
+    m.frame.size.set(.3,.3,.3);
+    meshes.push(m);
+  }
 
-  objA.useColor = false;
-  objB.useColor = false;
+  var img = new Image();
+  img.onload = function(){ texture.loadImage(img); }; 
+  img.src = "../imgs/nasa_cropped.jpg";
+
+  mouseZ = document.getElementById("mouseZ");
+
 }
 
 
 app.onRender = function() {
 
   var scene = this.scene;
+  var mouse = this.mouse;
 
+  var wm = scene.unproject( new GFX.Vector( mouse.x, mouse.y, .9 + mouseZ.value/1000) );
+ 
   scene.begin();
 
-    objA.frame.rotateX(.1);
-    objB.frame.rotateY(-.1);
+    texture.bind();
 
-    scene.draw(objA);
-    scene.draw(objB);
+    //scene.draw(fm);
 
-    var tmp = GFX.Mesh.MakeFrame();
 
-    if ( Math.sin( scene.time) > 0 ) {
-      tmp.useColor = false;
-    } else {
-      tmp.useColor = true;
-    }
-    
-    for (var i =1;i<100;++i){
-    	var amt = i/100;
-    	tmp.frame = GFX.Frame.FromTo(objA.frame, objB.frame, amt);
-      scene.draw(tmp);
+    for (var i =0;i<meshes.length;++i){
+      var forward = scene.camera.frame.position.sub(meshes[i].frame.position).unit();
+      var up = scene.camera.frame.y();
+      meshes[i].frame.setForwardUp( forward, up );
+      scene.draw(meshes[i]);
     }
 
   scene.end();
@@ -80,15 +89,19 @@ app.onRender = function() {
 
   attribute vec3 position;      //Position
   attribute vec3 color;         //Color
+  attribute vec2 uv;
 
   uniform mat4 model;           //Model Matrix
   uniform mat4 view;            //View Matrix
   uniform mat4 projection;      //Projection Matrix
+  uniform vec3 drawColor;
 
   varying vec3 vcolor;
+  varying vec2 vuv;
 
   void main() {
-    vcolor = color;
+    vuv = uv;
+    vcolor = color + drawColor;
     gl_Position = projection * view * model * vec4(position, 1.0);
     gl_PointSize = 10.0;
   }
@@ -103,17 +116,21 @@ app.onRender = function() {
   #endif
 
   uniform float u_time;
+  uniform sampler2D texture; // NEW!!
 
   varying vec3 vcolor;
+  varying vec2 vuv;
 
   void main() {
-    gl_FragColor = vec4(vcolor,1.0);
+    gl_FragColor =  texture2D(texture, vuv);
   }
 </script>
 
 <body onload=app.start()>
 <center>
 <canvas id="gfxcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
+<br>
+<input type="range" id ="mouseZ"> (mouseZ) </input>
 </center>
 </body>
 </html>

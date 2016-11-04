@@ -1,0 +1,126 @@
+<html>
+
+<!--  
+
+author: wolftype 
+license: MIT
+
+   Example use of GFX.js 
+
+   An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
+
+   With Context, Vectors, Matrices, Quaternions, Frames, Scenes and Shaders
+
+--> 
+
+
+<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx_v02.js"></script>
+//	
+
+</script> 
+
+<script type="text/javascript">
+
+
+var app = new GFX.App();
+var mesh;
+
+app.onInit = function(){
+
+  mesh = GFX.Mesh.MakeSphere();
+  mesh.useColor = false;
+}
+
+
+app.onRender = function() {
+    var scene = this.scene;
+    var eye = scene.camera.frame.position;
+    var wm = scene.unproject( new GFX.Vector( this.mouse.x, this.mouse.y, .95 ) );
+    scene.lightPos.set(0,0,2);//wm.x, wm.y, wm.z);
+    scene.begin();
+
+      mesh.frame.position.set(Math.sin(scene.time)*2,0,0);
+      
+      var va = new GFX.Vector(0,1,0);
+      var vb = new GFX.Vector(0,-1,0);
+
+      scene.draw(mesh);
+
+    scene.end();
+}
+
+</script>
+
+<!-- VERTEX SHADER -->
+<script id="gfxvert" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  attribute vec3 position;      //Position
+  attribute vec3 normal;        //Normal
+  attribute vec3 color;         //Color
+
+  uniform vec3 drawColor;       //Base color
+  uniform mat4 modelView;       //ModelView Matrix
+  uniform mat4 projection;      //Projection Matrix
+  uniform mat3 normalMatrix;    //Normal Matrix
+
+  varying vec3 vcolor;
+  varying vec3 vnormal;
+  varying vec3 vpos;
+
+  void main() {
+
+    vec4 mvPos = modelView * vec4(position, 1.0);       //eye space position
+
+    vpos = mvPos.xyz;
+    vnormal = normalMatrix * normal;                    //eye space normal direction
+
+    vcolor = drawColor + vec3(abs(color.x), abs(color.y), abs(color.z));
+    gl_Position = projection * mvPos;
+    gl_PointSize = 10.0;
+  }
+</script>
+
+
+<!-- FRAGMENT SHADER -->
+<script id="gfxfrag" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform float u_time;
+  uniform vec3 mvLightPos;       //Light Position in Eye Space
+
+  varying vec3 vcolor;
+  varying vec3 vnormal;
+  varying vec3 vpos;
+
+  float diffuse(vec3 lightdir, vec3 norm){
+   return max( dot( norm, -lightdir) , 0.0);
+  }
+
+  float specular(vec3 vdir, vec3 lightdir, vec3 norm){
+   return pow( max( dot( reflect( lightdir, norm ), -vdir), 0.0), 16.);
+  }
+
+  void main() {
+    vec3 mvNormal = normalize(vnormal);
+    vec3 mvDir = normalize(vpos);
+
+    vec3 mvLightDir = normalize(vpos - mvLightPos);   //incoming light direction
+    vec3 finalColor = vcolor * ( .3 + diffuse(mvLightDir, mvNormal)  );
+    finalColor += vec3(1.,1.,1.) * specular(mvDir, mvLightDir, mvNormal);
+    gl_FragColor = vec4(finalColor,1.0);
+  }
+</script>
+
+<body onload=app.start()>
+<center>
+<canvas id="gfxcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
+</center>
+</body>
+</html>

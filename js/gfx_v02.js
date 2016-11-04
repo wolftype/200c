@@ -166,6 +166,15 @@ GFX.Vector.Lerp = function( va, vb, amt){
 	return va.mult(1-amt).add(vb.mult(amt));
 }
 
+/* Origin */
+GFX.Vector.Origin = new GFX.Vector(0,0,0);
+/* Global X Axis */
+GFX.Vector.X = new GFX.Vector(1,0,0);
+/* Global Y Axis */
+GFX.Vector.Y = new GFX.Vector(0,1,0);
+/* Global Z Axis */
+GFX.Vector.Z = new GFX.Vector(0,0,1);
+
 /** @constructor */
 GFX.Vector4 = function(x,y,z,w){
 	this.set(x,y,z,w)
@@ -219,6 +228,61 @@ GFX.Vector4.prototype = {
 		return this.mult(-1);
 	}
 		
+}
+
+GFX.Matrix3 = function(a){
+	this.val = a || new Float32Array([
+		1,0,0,
+		0,1,0,
+		0,0,1
+	]);
+}
+
+GFX.Matrix3.prototype = {
+	constructor: GFX.Matrix3,
+	
+	copy: function(){
+		return new GFX.Matrix3( this.val );
+	},
+
+	set: function( a ){
+		this.val = a;
+		return this;
+	},
+
+	/// determinant
+	det: function(){
+		var m = this.val;
+
+ 		return m[0]*m[4]*m[8] + m[1]*m[5]*m[6] + m[2]*m[3]*m[7]
+ 			  -m[0]*m[5]*m[7] - m[1]*m[3]*m[8] - m[2]*m[4]*m[6];
+	},
+
+	inverse: function(){
+		var m = this.val;
+	 	var d = this.det();	
+	 	//cofactors
+	 	var c11 = this.minor([m[4],m[5],m[7],m[8]]);
+	 	var c12 = this.minor([m[3],m[5],m[6],m[8]]);
+	 	var c13 = this.minor([m[3],m[4],m[6],m[7]]);
+	 	var c21 = this.minor([m[1],m[2],m[7],m[8]]);
+	 	var c22 = this.minor([m[0],m[2],m[6],m[8]]);
+	 	var c23 = this.minor([m[0],m[1],m[6],m[7]]);
+	 	var c31 = this.minor([m[1],m[2],m[4],m[5]]);
+	 	var c32 = this.minor([m[0],m[2],m[3],m[5]]);
+	 	var c33 = this.minor([m[0],m[1],m[3],m[4]]); 
+
+	 	return new GFX.Matrix3([
+	 		c11/d, c12/d, c13/d,
+	 		c21/d, c22/d, c23/d,
+	 		c31/d, c32/d, c33/d
+	 	]);	
+	},
+
+	minor: function(m){
+		return m[0]*m[3]-m[1]*m[2];
+	}
+
 }
 
 
@@ -367,7 +431,16 @@ GFX.Matrix.prototype = {
 	 //pass in 3x3 submatrix
 	 minor: function(m){
  		return m[0]*m[4]*m[8] + m[1]*m[5]*m[6] + m[2]*m[3]*m[7]
- 			  -m[0]*m[5]*m[7] - m[1]*m[3]*m[8] - m[2]*m[4]*m[6]	 	
+ 			  -m[0]*m[5]*m[7] - m[1]*m[3]*m[8] - m[2]*m[4]*m[6];	 	
+	 },
+
+	 mat3: function(){
+	 	var m = this.val;
+	 	return new GFX.Matrix3([
+	 		m[0], m[1], m[2],
+	 		m[4], m[5], m[6],
+	 		m[8], m[9], m[10]
+	 	]);
 	 }
 }
 
@@ -546,11 +619,10 @@ GFX.Quaternion.prototype = {
 		var cos = v1.dot(v2);
 		// axis is unit normal to the plane spanned by v1 and v2
 		var axis;
-		if (cos < -.999 ){  //if opposites
-			axis = v1.cross( new GFX.Vector(0,0,1));
-			if (axis.norm() < .001 ){ //v1 is z axis
-				axis.set(1,0,0);
-				console.log(axis);
+		if (cos < -.999 ){  //if opposites use X to find axis
+			axis = v1.cross( GFX.Vector.X );
+			if (axis.norm() < .001 ){ //if v1 == X, just use Z
+				axis.set(0,0,1);
 			}
 		} else {
 			axis = v1.cross(v2);
@@ -740,19 +812,34 @@ GFX.Frame.prototype = {
 
 	//rotate Z axis towards t
 	setTargetX: function(t){
-		this.orientation.setRelative( new GFX.Vector(1,0,0), t.sub(this.position).unit(), 1.0);
+		this.orientation.setRelative( GFX.Vector.X, t.sub(this.position).unit(), 1.0);
 	},
 
 	//rotate Z axis towards t
 	setTargetY: function(t){
-		this.orientation.setRelative( new GFX.Vector(0,1,0), t.sub(this.position).unit(), 1.0);
+		this.orientation.setRelative( GFX.Vector.Y, t.sub(this.position).unit(), 1.0);
 	},
 
 	//rotate Z axis towards t
 	setTargetZ: function(t){
-		this.orientation.setRelative( new GFX.Vector(0,0,1), t.sub(this.position).unit(), 1.0);
+		this.orientation.setRelative( GFX.Vector.Z, t.sub(this.position).unit(), 1.0);
 	},
 
+	//rotate Z axis to new forward dir, keeping Y as close to up dir as possible
+	setForwardUp: function(forward, up){
+		var tup = up || GFX.Vector.Y; 	 								//default up vector is global up;
+		var q = GFX.Quaternion.Relative( GFX.Vector.Z, forward, 1.0); 	//Initial rotation
+		var ty = q.apply( GFX.Vector.Y ); 								//current Y
+		var nx = forward.cross( tup );		 							//orthogonal X
+		var ny = nx.cross( forward ).unit();							//New Y
+		var q2 = GFX.Quaternion.Relative(ty,ny,1.0);		//Rotate current to new
+		this.orientation = q2.mult( q );								//Compose Rotation
+	},
+
+	//set target uses z direction
+	setTarget: function(t){
+		this.setForwardUp( t.sub(this.position).unit() );
+	},
 
 	//"multiply" by another frame, to get this frame + relative transformation
 	mult: function(relFrame){
@@ -779,7 +866,13 @@ GFX.Frame.prototype = {
 
 		return m2;
 
-	}	
+	},
+
+	reset: function(){
+		this.position.set(0,0,0);
+		this.orientation.set(1,0,0,0);
+		this.size.set(1,1,1);
+	}
 
 };
 
@@ -792,19 +885,30 @@ GFX.Frame.FromTo = function(fa,fb,amt){
 	return f;
 }
 
-/// Camera has focallength, eye separation, and frame of reference
+
+
+/// Camera has focallength, eye separation, and frame of reference, and near and far clipping planes
 GFX.Camera = function(){
 	this.fovy = 45;								//field of view
 	this.focalLength = 100;						//parallax merge point
 	this.eyesep = .3;							//eye separation
 	this.frame = new GFX.Frame(0,0,5);		    //position and orientation
+	this.near = .1;								//near clipping plane
+	this.far = 100.;							//far clipping plane
 };
 
 GFX.Camera.prototype = {
 	constructor: GFX.Camera,
 
+	//orient towards target t, keeping Y axis as vertical as possible
 	setTarget: function(t){
-		this.frame.orientation.setRelative( new GFX.Vector(0,0,1), this.frame.position.sub(t).unit(), 1.0);
+		this.frame.setForwardUp(this.frame.position.sub(t).unit());
+	},
+
+	reset: function(){
+		this.frame.position.set(0,0,5);
+		this.frame.orientation.set(1,0,0,0);
+		this.frame.size.set(1,1,1);
 	}
 }
 
@@ -909,12 +1013,35 @@ GFX.Shader.prototype = {
   		}
 	},
 
+	/// Set Uniform matrix4 variable on this shader (shader must have been bound with bind())
+	setUniformMatrix3: function (name, value) {
+  		var uID = GL.getUniformLocation(this.id, name);
+  		if (uID != -1){
+  			GL.uniformMatrix3fv(uID, false, new Float32Array(value));
+  		}
+	},
+
+	/// Set Uniform float variable on this shader (shader must have been bound with bind())
+    setUniformVec: function(name, x,y,z) {
+  		var uID = GL.getUniformLocation(this.id, name);
+  		if (uID != -1){
+  			GL.uniform3f(uID, x,y,z);
+  		}
+	},
+
 	/// Set Uniform float variable on this shader (shader must have been bound with bind())
     setUniformFloat: function(name, value) {
   		var uID = GL.getUniformLocation(this.id, name);
   		if (uID != -1){
   			GL.uniform1f(uID, value);
   		}
+	},
+
+	setUniformInt: function(name,value){
+  		var uID = GL.getUniformLocation(this.id, name);
+  		if (uID != -1){
+  			GL.uniform1i(uID, value);
+  		}		
 	},
 
 	/// Call after a GFX.Shader is bound
@@ -946,6 +1073,68 @@ GFX.Shader.prototype = {
 	}	
 };
 
+
+GFX.Texture = function(){
+	this.id;
+	this.width;
+	this.height;
+}
+
+GFX.Texture.prototype = {
+	constructor: GFX.Texture,
+
+	init: function(w,h){
+		this.width = w;
+		this.height = h;
+		this.create();
+		this.bind();
+		this.alloc(w,h);
+		this.unbind();
+	},
+
+	create: function(){
+		this.id = GL.createTexture();
+	},
+
+	bind: function(){
+		GL.bindTexture(GL.TEXTURE_2D, this.id);
+	},
+
+	unbind: function(){
+		GL.bindTexture(GL.TEXTURE_2D, null);
+	},
+
+	alloc: function(w,h){
+		this.width = w;
+		this.height = h;
+		GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, w, h, 0, GL.RGBA, GL.UNSIGNED_BYTE, null);
+    	GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
+    	GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_NEAREST);
+    	GL.generateMipmap(GL.TEXTURE_2D);
+	}, 
+
+	//load from Image
+	loadImage: function(img){
+		this.create();
+		this.bind();
+		GL.pixelStorei(GL.UNPACK_FLIP_Y_WEBGL, true);
+		GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, img);
+		GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
+    	GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_NEAREST);
+    	GL.generateMipmap(GL.TEXTURE_2D);
+		this.unbind();
+	},
+
+	data: function(d, format){
+		GL.texSubImage2D(GL.TEXTURE_2D, 0,0,0,this.width,this.height, format || GL.RGBA, GL.UNSIGNED_BYTE, d);
+	},
+
+    //GL.activeTexture(GL.TEXTURE0+i);
+
+
+
+
+}
 
 /// type: Options are GL.ARRAY_BUFFER and GL.ELEMENT_ARRAY_BUFFER
 GFX.Buffer = function(type){
@@ -1063,7 +1252,7 @@ GFX.Mesh.prototype = {
 
 	loadUV: function(uv, hint){
 		this.useUV = true;
-		this.texBuffer.load(uv, hint);
+		this.texBuffer.load( new Float32Array(uv), hint);
 	},
 
 	loadColor: function(colors, hint){
@@ -1078,6 +1267,40 @@ GFX.Mesh.prototype = {
 };
 
 /// Useful Mesh Buffers
+GFX.Mesh.MakeRect = function(){
+
+	if (!GFX.Mesh.Rect){
+		console.log("making frame mesh")
+		var buffer = new GFX.Mesh();
+
+		var vertices = [
+			-1.0,-1.0,0.0,
+			-1.0,1.0,0.0,
+			1.0,1.0,0.0, 	
+			1.0,-1.0,0.0
+		]; 
+
+		var idx = [ 0,1,3,2 ];
+
+		var uv = [ 
+			0.0,0.0,
+			0.0,1.0,
+			1.0,1.0,
+			1.0,0.0
+		];
+
+		buffer.load(vertices, idx); 
+		buffer.loadUV(uv);
+
+		buffer.mode = GL.TRIANGLE_STRIP;
+		buffer.useElements = true;
+
+		GFX.Mesh.Rect = buffer;
+	}
+	return GFX.Mesh.Rect.copy();
+
+};
+
 GFX.Mesh.MakeFrame = function(){
 
 	if (!GFX.Mesh.Frame){
@@ -1110,6 +1333,82 @@ GFX.Mesh.MakeFrame = function(){
 		GFX.Mesh.Frame = buffer;
 	}
 	return GFX.Mesh.Frame.copy();
+
+};
+
+GFX.Mesh.MakeCone = function(){
+	if (!GFX.Mesh.Cone){
+		console.log("making cone mesh")
+		var buffer = new GFX.Mesh();
+		var num = 30;
+		var vertices = []; 
+		var normals = []
+		vertices.push(0,1,0);
+		normals.push(0,1,0);
+		for (var i=0;i<=num;++i){
+			var t = i/num;
+			var v = new GFX.Vector(Math.cos(Math.PI*2*t),  0, Math.sin(Math.PI*2*t));
+			var n = v.unit();
+			vertices.push( v.x, v.y, v.z);
+			normals.push( n.x, n.y, n.z);
+		}
+
+		var idx = [];
+        for (var j = 1; j <= num; j+=1){
+           var next = j < num ? j+1 : 1;
+           idx.push(0,j,next,0); 
+        }
+
+		buffer.load(vertices, idx); 
+		buffer.loadNormal( normals );
+
+		buffer.mode = GL.TRIANGLE_STRIP;
+		buffer.useElements = true;
+
+		GFX.Mesh.Cone = buffer;
+	}
+	return GFX.Mesh.Cone.copy();
+};
+
+GFX.Mesh.MakeCylinder = function(){
+	if (!GFX.Mesh.Cylinder){
+		console.log("making cone mesh")
+		var buffer = new GFX.Mesh();
+		var slices = 30;
+		var stacks = 1;
+		var height = 1;
+		var vertices = []; 
+		var normals = []
+
+		for (var j=0;j<=stacks;++j){
+			var h = -height/2.0 + height*j/stacks;
+			for (var i=0;i<slices;++i){
+				var t = i/slices;
+				var v = new GFX.Vector(Math.cos(Math.PI*2*t), h, Math.sin(Math.PI*2*t));
+				var n = new GFX.Vector(v.x, 0, v.z);
+				vertices.push( v.x, v.y, v.z);
+				normals.push( n.x, n.y, n.z);
+			}
+		}
+
+		var idx = [];
+        for (var i=0; i<stacks; ++i){
+        	for (var j = 0; j<=slices;++j){
+        		var a = j < slices ? i * slices + j : i * slices;
+        		var b = a + slices;
+        		idx.push(a,b);
+        	}
+        }
+
+		buffer.load(vertices, idx); 
+		buffer.loadNormal( normals );
+
+		buffer.mode = GL.TRIANGLE_STRIP;
+		buffer.useElements = true;
+
+		GFX.Mesh.Cylinder = buffer;
+	}
+	return GFX.Mesh.Cylinder.copy();
 
 };
 
@@ -1197,6 +1496,7 @@ GFX.Mesh.Make = function(){
 	GFX.Mesh.MakeFrame();
 	GFX.Mesh.MakeCircle();
 	GFX.Mesh.MakeSphere();
+	GFX.Mesh.MakeCone();
 }
 
 GFX.MatrixStack = function(){
@@ -1247,6 +1547,13 @@ GFX.Scene = function(width, height){
 	this.time = 0.0;							    ///< Time: will increment every onRender()
 	this.frame = new GFX.Frame();					///< Scene's base model transform
 	this.matrix = new GFX.MatrixStack();			///< Push / Pop Matrix Stack
+	this.model = new GFX.Matrix();					///< Current Model (from this.frame.matrix())
+	this.view = new GFX.Matrix();					///< Current View Matrix 
+	this.projection = new GFX.Matrix();				///< Current Projection Matrix
+	this.modelView = new GFX.Matrix();				///< Current View * Model
+	this.modelViewProjection = new GFX.Matrix();	///< Current Projection * View * Model;
+	this.lightPos = new GFX.Vector(0,1,1);			///< Light Position Vector
+	this.drawColor = new GFX.Vector(0,1,0);			///< Current Draw Color (used for meshes without color attributes)
 };
 
 GFX.Scene.prototype = {
@@ -1271,6 +1578,7 @@ GFX.Scene.prototype = {
 		this.matrix = new GFX.MatrixStack();
 
 		//calculate matrices and upload to shader
+		this.calculateMatrices();
 		this.uploadMatrices(this.shader);
 
     	//resize to canvas width and height
@@ -1278,39 +1586,53 @@ GFX.Scene.prototype = {
     	GL.viewport(0,0, this.width, this.height);	
 	},
 
-	uploadMatrices(shader){
-	    var model = GFX.Matrix.identity();
+	calculateMatrices(){
+	    this.model = this.frame.matrix();
 
-	    var view =  GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
+	    this.view =  GFX.Matrix.lookAt( this.camera.frame.position, 							//eye 
 	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
 	                                   this.camera.frame.y() );									//up
 
-	    var projection = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);  
+	    this.projection = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, this.camera.near, this.camera.far);  
 
-	    //Send Matrices over to GPU (transposed because GLSL matrices are column major)
+	    this.modelView = this.view.mult(this.model);
+	    this.modelViewProjection = this.projection.mult(this.view).mult(this.model);		
+	},
+
+	//Send Matrices over to GPU (transposed because GLSL matrices are column major)
+	uploadMatrices(shader){
 	    shader.bind();
-	    shader.setUniformMatrix("model", model.transpose().val );		
-	    shader.setUniformMatrix("view", view.transpose().val );
-	    shader.setUniformMatrix("projection", projection.transpose().val );
+	    shader.setUniformMatrix("model", this.model.transpose().val );		
+	    shader.setUniformMatrix("view", this.view.transpose().val );	
+	    shader.setUniformMatrix("modelView",this.modelView.transpose().val );
+	    shader.setUniformMatrix("projection", this.projection.transpose().val );
+	
+		//normal matrix is transposed inverse of upperleft 3x3 submatrix of modelview
+	    shader.setUniformMatrix3("normalMatrix", this.modelView.mat3().inverse().val );
+
+	    //Light Position in Eye Space
+	    var v = this.modelView.multVec( this.lightPos.hom() );
+	    shader.setUniformVec("mvLightPos", v.x, v.y, v.z);
 	},
 
 	/// Draw a Mesh
 	draw: function(mesh){
-		/// mouse control   *   pushing and popping *  TRS
-		/// scene.frame.matrix * scene.matrixstack * mesh.localtransformation
-		var m = this.frame.matrix().mult( this.matrix.last() ).mult( mesh.frame.matrix() );
-		this.shader.setUniformMatrix("model", m.transpose().val );
 
-	    //for lighting, lets calculate the transposed inverse of the model
-	    // var nm = m.inverse().transpose();
-	    //this.shader.setUniformMatrix("normalMatrix", m.inverse().val );
+		var objModel = this.matrix.last().mult( mesh.frame.matrix() );
+		var m = this.model.mult( objModel );
+	    var mv = this.view.mult( m );
 
+	    this.shader.setUniformMatrix("model", m.transpose().val);
+	    this.shader.setUniformMatrix("modelView", mv.transpose().val);	    
+	    this.shader.setUniformMatrix3("normalMatrix", mv.mat3().inverse().val );
+    	
     	if (mesh.useColor){
     		this.shader.enableAttribute("color");
 			mesh.colorBuffer.bind();
 			this.shader.pointAttribute("color",3);		
     	} else {
     	    this.shader.disableAttribute("color");	
+			this.shader.setUniformVec("drawColor", this.drawColor.x, this.drawColor.y, this.drawColor.z);
     	}
     	
     	if (mesh.useNormal){
@@ -1351,30 +1673,15 @@ GFX.Scene.prototype = {
 
 	/// Calculate screen pixel coordinates of a world coordinate v
 	project: function(v){
-		var model = this.frame.matrix();
-		var view = GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
-	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
-	                                   this.camera.frame.y() );									//up
-		var proj = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);
-		var mvp = proj.mult(view).mult(model);
-
-		var tv = mvp.multVec(v.hom());
+		var tv = this.modelViewProjection.multVec(v.hom());
 		tv = tv.divide(tv.w);
-
 		return new GFX.Vector( this.width * (1+tv.x)/2, this.height * (1+tv.y)/2, (1+tv.z)/2);
 	},
 
 	/// Calculate world coordinates of a screen pixel coordinate v
 	unproject: function(v){
-		var model = this.frame.matrix();
-		var view = GFX.Matrix.lookAt( this.camera.frame.position, 								//eye 
-	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
-	                                   this.camera.frame.y() );									//up
-		var proj = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, 0.1, 100.0);
-		var pmv = proj.mult(view).mult(model);
-
 		var vp = new GFX.Vector4( 2*(v.x/this.width)-1, 2*(v.y/this.height)-1, 2*(v.z)-1,1 );
-		var tv = pmv.inverse().multVec(vp);
+		var tv = this.modelViewProjection.inverse().multVec(vp);
 		tv = tv.divide(tv.w);
 		return new GFX.Vector( tv.x, tv.y, tv.z );
 	}	
@@ -1401,6 +1708,12 @@ GFX.App = function(){
 	this.canvas;
 }
 
+GFX.App.KeyLeftArrow = 37;
+GFX.App.KeyRightArrow = 39;
+GFX.App.KeyUpArrow = 38;
+GFX.App.KeyDownArrow = 40;
+
+
 GFX.App.prototype = {
 
 	constructor: GFX.App,
@@ -1413,6 +1726,7 @@ GFX.App.prototype = {
 		this.canvas.addEventListener("mousemove",this);		
 		this.canvas.addEventListener("mouseup",this);	
 		this.canvas.addEventListener("mouseleave",this);
+		window.addEventListener("keydown",this);
 
  		var vertScript = document.getElementById("gfxvert").text;
   		var fragScript = document.getElementById("gfxfrag").text;
@@ -1467,7 +1781,30 @@ GFX.App.prototype = {
  			case "mouseup":
  			case "mouseleave": 			
  				this.mouse.down = false;
- 				break; 			
+ 				break; 	
+ 			case "keydown":
+ 				switch(e.keyCode){
+ 					case GFX.App.KeyUpArrow:
+ 						var z = this.scene.camera.frame.z().mult(-.2);
+ 						this.scene.camera.frame.translate(z.x,z.y,z.z);
+ 						break;
+ 					case GFX.App.KeyDownArrow: 
+ 						var z = this.scene.camera.frame.z().mult(.2);; 					
+ 					 	this.scene.camera.frame.translate(z.x,z.y,z.z);
+ 					 	break;
+ 					case GFX.App.KeyRightArrow:
+ 						this.scene.camera.frame.rotateY(-.1);
+ 						break;
+ 					case GFX.App.KeyLeftArrow: 
+ 						this.scene.camera.frame.rotateY(.1);
+ 						break;
+ 					case 67:
+ 						console.log('c');
+ 						this.scene.frame.reset();
+ 						this.scene.camera.reset();
+ 						break;
+ 				}
+ 				break;		
  		}
  	}
 }

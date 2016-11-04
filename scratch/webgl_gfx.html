@@ -41,7 +41,7 @@ license: MIT
 --> 
 
 
-<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
+<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx_v02.js"></script>
 
 <script type="text/javascript">
 
@@ -129,7 +129,7 @@ app.onRender = function() {
   var scene = this.scene;
 
   //rotate scene camera about y axis
-  scene.camera.frame.rotateY( Math.sin( scene.time) * Math.PI / 20  );
+  scene.camera.frame.orientation = GFX.Quaternion.Rotation( Math.sin( scene.time) * Math.PI / 20,  0,1,0);
 
   //begin scene render, send matrices over to shader uniform
   scene.begin();
@@ -141,7 +141,7 @@ app.onRender = function() {
     scene.shader.enableAttribute( "position" );
     scene.shader.enableAttribute( "uv" );
 
-    box.frame.rotateX( scene.time );
+    box.frame.rotateX( .01 );
 
     //upload model matrix
     box.uploadModel(scene.shader)

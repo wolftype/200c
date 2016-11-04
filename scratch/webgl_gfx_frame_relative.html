@@ -23,49 +23,31 @@ license: MIT
 
 
 var app = new GFX.App();
-var objA;
-var objB;
+var mesh;
 
 app.onInit = function(){
 
+  mesh =GFX.Mesh.MakeFrame();
 
-  objA = GFX.Mesh.MakeFrame();
-  objB = GFX.Mesh.MakeFrame();
-
-  objA.frame.position.set(-2,0,0);
-  objB.frame.position.set(2,0,0);
-
-  objA.useColor = false;
-  objB.useColor = false;
 }
 
 
-app.onRender = function() {
-
+app.onRender = function(){
   var scene = this.scene;
-
   scene.begin();
+    var relFrame = new GFX.Frame();
+    var curFrame = new GFX.Frame();
 
-    objA.frame.rotateX(.1);
-    objB.frame.rotateY(-.1);
+    relFrame.position.set(.1,0,0); 
+    relFrame.orientation.setRotation(2*Math.PI/100,0,0,1);
+    relFrame.size.set(.99,.99,.99);
 
-    scene.draw(objA);
-    scene.draw(objB);
-
-    var tmp = GFX.Mesh.MakeFrame();
-
-    if ( Math.sin( scene.time) > 0 ) {
-      tmp.useColor = false;
-    } else {
-      tmp.useColor = true;
+    for (var i =0; i<100; ++i){
+      var t = i/100;
+      curFrame = curFrame.mult(relFrame);
+      mesh.frame = curFrame;
+      scene.draw(mesh);
     }
-    
-    for (var i =1;i<100;++i){
-    	var amt = i/100;
-    	tmp.frame = GFX.Frame.FromTo(objA.frame, objB.frame, amt);
-      scene.draw(tmp);
-    }
-
   scene.end();
 }
 

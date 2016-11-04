@@ -86,7 +86,7 @@ app.onRender = function() {
     //enable attributes in shader
     scene.shader.enableAttribute( "position" );
 
-    sphere.frame.rotateY( scene.time );
+    sphere.frame.rotateY( .1 );
 
     //upload model matrix
     sphere.uploadModel(scene.shader)

@@ -14,7 +14,7 @@ license: MIT
 --> 
 
 
-<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx_v02.js">
+<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx_v02.js"></script>
 //	
 
 </script> 
@@ -43,19 +43,19 @@ app.onRender = function() {
   var scene = this.scene;
   var mouse = this.mouse;
 
-  //scene.frame.scale.set( Math.sin(scene.time), 1, 1 );
-  var t = scene.time;
-// scene.camera.frame.position.set( 5 * Math.sin(t), 5* Math.cos(t),0);
-// scene.camera.setTarget( new GFX.Vector(0,0,0) );
-
   var wm = scene.unproject( new GFX.Vector( mouse.x, mouse.y, .9 + mouseZ.value/1000) );
  
-  objA.frame.position = wm;
-  objB.frame.setTargetZ( wm );
-
   scene.begin();
 
+    objA.frame.position = wm;
     scene.draw(objA);
+
+    objB.frame.setTarget( wm );
+    objB.useColor = true;
+    scene.draw(objB);
+
+    objB.frame.setTargetZ(wm);
+    objB.useColor = false;
     scene.draw(objB);
 
   scene.end();

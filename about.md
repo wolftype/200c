@@ -39,6 +39,23 @@ that we will start together in class.
 6-Color  
 7-Higher Dimensions  
 
+Some possible Topics For Your Final Projects:
+
+* abstract artwork  
+* voronoi and delaunay triangulation  
+* binary space partitions and octrees  
+* inverse kinematics and rigging  
+* line integral convolution  
+* other algebras (dual quaternions, motors, plucker coordinates)  
+* geometry processing (mesh manipulation techniques)  
+* fluid simulations  
+* volumetric rendering  
+* tessellation shaders  
+* geometry shaders  
+* lighting techniques  
+* flocking  
+* L-system  
+
 ## So what is this class really about?
 
 geometry -> motion -> space -> graphics -> seeing -> you.
