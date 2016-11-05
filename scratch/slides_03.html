@@ -93,7 +93,8 @@
 			</section>	
 			<section data-markdown>
 				<script type="text/template">
-				### Lighting is done in Eye Space Coordinates: $view*model*v$
+				### Lighting is done in Eye Space Coordinates
+				`$$ M_{modelView}=M_{view} * M_{model} $$`
 				* Makes Lighting Calculations easier
 				* Camera is at $(0,0,0)$
 				* Helps calculate eye-dependent parameters (e.g. specular highlights)
@@ -104,7 +105,7 @@
 				### The Normal Matrix
 				* Rotates normal directions into eye space
 				* Transposed Inverse of the upper left 3x3 sub-matrix of the Modelview
-				$$ (S_{3,3}[view * model]^{-1})^{T} $$
+				`$$ (S_{3,3}[M_{modelView}]^{-1})^{T} $$`
 				* see [this for an explanation](http://www.lighthouse3d.com/tutorials/glsl-12-tutorial/the-normal-matrix/)
 				* Basically, we need a special transform to avoid shearing the normal due to uneven scaling.
 				
