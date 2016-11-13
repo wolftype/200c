@@ -60,27 +60,20 @@ var RequestAnimFrame = ( function() {
 	} ) (); 
 
 
-/// Create Graphics Context By Passing in ID of canvas in body -- @todo or adding one to DOM if doesn't exist
+/** Create Graphics Context By Passing in ID of canvas in body -- @todo or adding one to DOM if doesn't exist */
 GFX.InitContext = function( canvas ){
 
 	console.log("initializing gl context");
-
-		// Get Context
 	GL = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-
-	    // Check for Successful Context Creation
-	  	if (!GL) {
+	if (!GL) {
 		alert("Unable to initialize WebGL. Your browser may not support it. Go to webglreport.com");
-	    	return
+	    return
 	}
 	
-	// Enable depth testing
     GL.enable(GL.DEPTH_TEST);
-    // Near things obscure far things
     GL.depthFunc(GL.LEQUAL);
 
     console.log(GL)
-
 }
 
 
@@ -183,11 +176,13 @@ GFX.Vector4 = function(x,y,z,w){
 GFX.Vector4.prototype = {
 	
 	constructor: GFX.Vector4,
-
+	
+	/** Return a new copy */
 	copy: function(){
 		return new GFX.Vector4(this.x, this.y, this.z, this.w);
 	},
 
+	/** Set Coordinates */
 	set: function(x,y,z,w){
 
 		this.x = x || 0;
@@ -631,6 +626,18 @@ GFX.Quaternion.prototype = {
 		return this.setAxisAngle( axis, Math.acos(cos) * amt );
 	},
 
+	/// set forward and closest up 
+	setForwardUp: function(forward, up){
+		var tup = up || GFX.Vector.Y; 	 								//default up vector is global up;
+		var q = GFX.Quaternion.Relative( GFX.Vector.Z, forward, 1.0); 	//Initial rotation
+		var ty = q.apply( GFX.Vector.Y ); 								//current Y
+		var nx = forward.cross( tup );		 							//orthogonal X
+		var ny = nx.cross( forward ).unit();							//New Y
+		var q2 = GFX.Quaternion.Relative(ty,ny,1.0);					//Rotate current to new
+		var fq = q2.mult( q );											//Compose Rotation
+		this.set(fq.w, fq.x, fq.y, fq.z);
+	},
+
 	setSlerp(q,amt){
 		return GFX.Quaternion.Slerp(this, q, amt);
 	},
@@ -744,6 +751,11 @@ GFX.Quaternion.Relative = function(va,vb,t){
 	return q.setRelative(va,vb,t);
 }
 
+GFX.Quaternion.ForwardUp = function(forward,up){
+	var q = new GFX.Quaternion();
+	return q.setForwardUp(forward,up);
+}
+
 /// A Frame has a 3D position, a 3D orientation, and a 3D Scale
 GFX.Frame = function(x,y,z){
 	this.position = new GFX.Vector(x,y,z);			///< A 3D Position
@@ -800,14 +812,29 @@ GFX.Frame.prototype = {
 		this.orientation = this.orientation.mult(GFX.Quaternion.Rotation(rad,1,0,0));
 	},
 
+	//Rotate around World X Axis
+	rotateWorldX: function(rad){
+		this.orientation = GFX.Quaternion.Rotation(rad,1,0,0).mult(this.orientation);
+	},	
+
 	//Rotate around Local Y Axis
 	rotateY: function(rad){
 		this.orientation = this.orientation.mult(GFX.Quaternion.Rotation(rad,0,1,0));
 	},
 
+	//Rotate around World Y Axis
+	rotateWorldY: function(rad){
+		this.orientation = GFX.Quaternion.Rotation(rad,0,1,0).mult(this.orientation);
+	},	
+
 	//Rotate around Local Z axis
 	rotateZ: function(rad){
 		this.orientation = this.orientation.mult(GFX.Quaternion.Rotation(rad,0,0,1));
+	},
+
+	//Rotate around World Z Axis
+	rotateWorldZ: function(rad){
+		this.orientation = GFX.Quaternion.Rotation(rad,0,0,1).mult(this.orientation);
 	},
 
 	//rotate Z axis towards t
@@ -826,19 +853,19 @@ GFX.Frame.prototype = {
 	},
 
 	//rotate Z axis to new forward dir, keeping Y as close to up dir as possible
-	setForwardUp: function(forward, up){
-		var tup = up || GFX.Vector.Y; 	 								//default up vector is global up;
-		var q = GFX.Quaternion.Relative( GFX.Vector.Z, forward, 1.0); 	//Initial rotation
-		var ty = q.apply( GFX.Vector.Y ); 								//current Y
-		var nx = forward.cross( tup );		 							//orthogonal X
-		var ny = nx.cross( forward ).unit();							//New Y
-		var q2 = GFX.Quaternion.Relative(ty,ny,1.0);		//Rotate current to new
-		this.orientation = q2.mult( q );								//Compose Rotation
-	},
+	// setForwardUp: function(forward, up){
+	// 	var tup = up || GFX.Vector.Y; 	 								//default up vector is global up;
+	// 	var q = GFX.Quaternion.Relative( GFX.Vector.Z, forward, 1.0); 	//Initial rotation
+	// 	var ty = q.apply( GFX.Vector.Y ); 								//current Y
+	// 	var nx = forward.cross( tup );		 							//orthogonal X
+	// 	var ny = nx.cross( forward ).unit();							//New Y
+	// 	var q2 = GFX.Quaternion.Relative(ty,ny,1.0);		//Rotate current to new
+	// 	this.orientation = q2.mult( q );								//Compose Rotation
+	// },
 
 	//set target uses z direction
 	setTarget: function(t){
-		this.setForwardUp( t.sub(this.position).unit() );
+		this.orientation.setForwardUp( t.sub(this.position).unit() );
 	},
 
 	//"multiply" by another frame, to get this frame + relative transformation
@@ -902,7 +929,7 @@ GFX.Camera.prototype = {
 
 	//orient towards target t, keeping Y axis as vertical as possible
 	setTarget: function(t){
-		this.frame.setForwardUp(this.frame.position.sub(t).unit());
+		this.frame.orientation.setForwardUp(this.frame.position.sub(t).unit());
 	},
 
 	reset: function(){
@@ -915,7 +942,7 @@ GFX.Camera.prototype = {
 
 GFX.Shader = function(vert,frag){
 	if (vert && frag){
-		this.load(vert,frag);
+		this.program(vert,frag);
 	}
 };
 
@@ -1073,6 +1100,9 @@ GFX.Shader.prototype = {
 	}	
 };
 
+GFX.Shader.Text = function(){}
+GFX.Shader.Text.precision = "#ifdef GL_ES \n precision lowp float; \n #endif\n";
+
 
 GFX.Texture = function(){
 	this.id;
@@ -1084,8 +1114,6 @@ GFX.Texture.prototype = {
 	constructor: GFX.Texture,
 
 	init: function(w,h){
-		this.width = w;
-		this.height = h;
 		this.create();
 		this.bind();
 		this.alloc(w,h);
@@ -1108,9 +1136,7 @@ GFX.Texture.prototype = {
 		this.width = w;
 		this.height = h;
 		GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, w, h, 0, GL.RGBA, GL.UNSIGNED_BYTE, null);
-    	GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
-    	GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_NEAREST);
-    	GL.generateMipmap(GL.TEXTURE_2D);
+		this.setParameters();
 	}, 
 
 	//load from Image
@@ -1119,21 +1145,82 @@ GFX.Texture.prototype = {
 		this.bind();
 		GL.pixelStorei(GL.UNPACK_FLIP_Y_WEBGL, true);
 		GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, img);
-		GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
-    	GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_NEAREST);
-    	GL.generateMipmap(GL.TEXTURE_2D);
+		this.setParameters();
+	},
+
+	setParameters: function(){
+		this.bind();	
+			GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.NEAREST);
+    		GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.NEAREST);
+    		GL.generateMipmap(GL.TEXTURE_2D);
 		this.unbind();
 	},
 
 	data: function(d, format){
 		GL.texSubImage2D(GL.TEXTURE_2D, 0,0,0,this.width,this.height, format || GL.RGBA, GL.UNSIGNED_BYTE, d);
 	},
+}
 
-    //GL.activeTexture(GL.TEXTURE0+i);
+GFX.Texture.Active = function(i){
+	GL.activeTexture(GL.TEXTURE0+i);
+}
 
+GFX.CubeMap = function(){
+	this.id;
+	this.width;
+	this.height;
+}
 
+GFX.CubeMap.prototype = {
+	constructor: GFX.CubeMap,
 
+	create: function(){
+		this.id = GL.createTexture();
+	},
 
+	bind: function(){
+		GL.bindTexture(GL.TEXTURE_CUBE_MAP, this.id);
+	},
+
+	unbind: function(){
+		GL.bindTexture(GL.TEXTURE_CUBE_MAP, null);
+	},
+
+	alloc: function(w,h){
+		this.width = w;
+		this.height = h;
+		for (var i =0;i<6;++i){
+			GL.texImage2D(GL.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL.RGBA, w, h, 0, GL.RGBA, GL.UNSIGNED_BYTE, null);
+    	}
+    	GL.texParameteri(GL.TEXTURE_CUBE_MAP, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
+    	GL.texParameteri(GL.TEXTURE_CUBE_MAP, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_NEAREST);
+    	GL.generateMipmap(GL.TEXTURE_CUBE_MAP);    	
+	}, 
+
+	//load from Image
+	loadImage: function(img, i, bFlip){
+		this.bind();
+			GL.pixelStorei(GL.UNPACK_FLIP_Y_WEBGL, bFlip);
+			GL.texImage2D(GL.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, img);
+		this.unbind();
+	},
+
+	setParameters: function(){
+		this.bind();
+			GL.texParameteri(GL.TEXTURE_CUBE_MAP, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
+    		GL.texParameteri(GL.TEXTURE_CUBE_MAP, GL.TEXTURE_MIN_FILTER, GL.LINEAR);
+    		GL.texParameteri(GL.TEXTURE_CUBE_MAP, GL.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE);
+            GL.texParameteri(GL.TEXTURE_CUBE_MAP, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE); 
+           // GL.texParameteri(GL.TEXTURE_CUBE_MAP, GL.TEXTURE_WRAP_R, GL.CLAMP_TO_EDGE);          
+    		GL.generateMipmap(GL.TEXTURE_CUBE_MAP);
+		this.unbind();
+	},
+
+	data: function(d, format){
+		for (var i =0;i<6;++i){
+			GL.texSubImage2D(GL.TEXTURE_CUBE_MAP_POSITIVE_X+i, 0,0,0,this.width,this.height, format || GL.RGBA, GL.UNSIGNED_BYTE, d[i]);
+		}
+	},
 }
 
 /// type: Options are GL.ARRAY_BUFFER and GL.ELEMENT_ARRAY_BUFFER
@@ -1263,6 +1350,50 @@ GFX.Mesh.prototype = {
 	loadNormal: function(normals, hint){
 		this.useNormal = true;
 		this.normalBuffer.load(new Float32Array(normals), hint);
+	},
+
+	enableUV: function(shader){
+		shader.enableAttribute("uv");
+		this.texBuffer.bind();
+		shader.pointAttribute("uv",2);
+	},
+
+	draw: function(shader){
+
+    	if (this.useColor){
+    		shader.enableAttribute("color");
+			this.colorBuffer.bind();
+			shader.pointAttribute("color",3);		
+    	} else {
+    	    shader.disableAttribute("color");	
+			//shader.setUniformVec("drawColor", this.drawColor.x, this.drawColor.y, this.drawColor.z);
+    	}
+    	
+    	if (this.useNormal){
+    		shader.enableAttribute("normal");
+			this.normalBuffer.bind();
+			shader.pointAttribute("normal",3);		
+    	} else {
+    		shader.disableAttribute("normal");
+    	}
+
+    	if (this.useUV){
+    		shader.enableAttribute("uv");
+			this.texBuffer.bind();
+			shader.pointAttribute("uv",2);		
+    	} else {
+    		shader.disableAttribute("uv");
+    	}
+
+		shader.enableAttribute("position");
+		this.vertexBuffer.bind();
+		shader.pointAttribute("position",3);		
+    	if (this.useElements){
+			this.indexBuffer.bind();
+			this.indexBuffer.drawElements(this.mode);
+    	} else {
+			this.vertexBuffer.drawArrays(this.mode);
+		}		
 	}
 };
 
@@ -1333,6 +1464,87 @@ GFX.Mesh.MakeFrame = function(){
 		GFX.Mesh.Frame = buffer;
 	}
 	return GFX.Mesh.Frame.copy();
+
+};
+
+GFX.Mesh.MakeCube = function(){
+
+	if (!GFX.Mesh.Cube){
+		console.log("making frame mesh")
+		var buffer = new GFX.Mesh();
+
+		// A CUBE! 
+		// We include each vertex on the back side TWICE so that we can attach
+		// TWO separate uv coordinates to each
+		var vertices = new Float32Array( [
+			-1.0, -1.0, 1.0,  //bottom left front
+			-1.0, 1.0,  1.0,  //top left front
+			1.0,  1.0,  1.0,  //top right front
+			1.0,  -1.0, 1.0,  //bottom right front
+
+			-1.0, -1.0, -1.0, //bottom left back
+			-1.0, 1.0,  -1.0, //top left back
+			1.0,  1.0,  -1.0, //top right back
+			1.0,  -1.0, -1.0, //bottom right back
+
+			//second copy of front side:
+			-1.0, -1.0, 1.0,  //bottom left front II
+			-1.0, 1.0,  1.0,  //top left front II
+			1.0,  1.0,  1.0,  //top right front II
+			1.0,  -1.0, 1.0,  //bottom right front II
+
+			//second copy of back side:
+			-1.0, -1.0, -1.0, //bottom left back II
+			-1.0, 1.0,  -1.0, //top left back II
+			1.0,  1.0,  -1.0, //top right back II
+			1.0,  -1.0, -1.0, //bottom right back II
+
+		]); 
+
+		var texCoord = new Float32Array([
+			0.0, 0.0,   
+			0.0, 1.0,  
+			1.0, 1.0,
+			1.0, 0.0, 
+			1.0, 0.0,
+			1.0, 1.0,
+			0.0, 1.0,
+			0.0, 0.0, 
+			//uvs to attach to second copy
+			//for texturing top and bottom of cube:
+			0.0, 0.0,
+			0.0, 0.0,
+			1.0, 0.0,
+			1.0, 0.0,
+
+			1.0, 0.0,
+			1.0, 0.0,
+			1.0, 1.0,
+			1.0, 1.0,
+
+		]);  
+
+		//Break Object Vertices Triangles
+		var indices = new Uint16Array([
+			1,0,3,2,1,3, //front
+			2,3,7,6,2,7, //right
+			6,7,4,5,6,4, //back
+			5,4,1,1,4,0, //left
+			//use alternative uvs for top and bottom:
+			// 9,10,13,10,14,13, //top
+			// 8,11,12,12,11,15 //bottom
+			10,9,13,14,10,13, //top
+			11,8,12,11,12,15 //bottom			
+		]);
+
+		buffer.load(vertices, indices); 
+		buffer.loadUV(texCoord);
+		buffer.mode = GL.TRIANGLES;
+		buffer.useElements = true;
+
+		GFX.Mesh.Cube = buffer;
+	}
+	return GFX.Mesh.Cube.copy();
 
 };
 
@@ -1538,12 +1750,11 @@ GFX.MatrixStack.prototype = {
 /// Scene: has width, height, background color, camera, shader, and time
 /// To be created after GFX.Context() has already defined a global GL context
 GFX.Scene = function(width, height){
-	
 	this.width = width || GL.canvas.width;			///< Width of Context in Pixels
 	this.height = height || GL.canvas.height;		///< Height of Context in Pixels
 	this.camera = new GFX.Camera();					///< View and Projection matrices
 	this.shader = new GFX.Shader();					///< Vertex and Fragment Shader
-	this.color = [1.,1.,1.,1.]; 			    	///< Background Color
+	this.color = [1.,.8,1.,1.]; 			    	///< Background Color
 	this.time = 0.0;							    ///< Time: will increment every onRender()
 	this.frame = new GFX.Frame();					///< Scene's base model transform
 	this.matrix = new GFX.MatrixStack();			///< Push / Pop Matrix Stack
@@ -1560,38 +1771,30 @@ GFX.Scene.prototype = {
 
 	constructor: GFX.Scene,
 
-	/// Clear Screen with color
-	clear: function( ){
-    	GL.clearColor( this.color[0], this.color[1], this.color[2], this.color[3] );
-	    GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-    },
-	
-	/// Start Rendering Scene: 
-	/// 1 - bind shader
-	/// 2 - load identity model, set up shader's projection and view matrices
-	/// 3 - clear screen, and set viewport
-	begin: function(){
-		 
+	update: function(){
+		//increment time
 		this.time += .02;
-
-		//Start a new matrix stack
+		//reset the matrix stack
 		this.matrix = new GFX.MatrixStack();
-
-		//calculate matrices and upload to shader
+		//calculate matrices
 		this.calculateMatrices();
+		//upload matrices to shader
 		this.uploadMatrices(this.shader);
+	},
 
-    	//resize to canvas width and height
-    	this.clear();
-    	GL.viewport(0,0, this.width, this.height);	
+	/// Start Rendering Scene
+	begin: function(){
+		this.update();
+		this.clear();
+		this.viewport();
 	},
 
 	calculateMatrices(){
 	    this.model = this.frame.matrix();
 
 	    this.view =  GFX.Matrix.lookAt( this.camera.frame.position, 							//eye 
-	                                   this.camera.frame.position.sub(this.camera.frame.z()),	//target
-	                                   this.camera.frame.y() );									//up
+	                                    this.camera.frame.position.sub(this.camera.frame.z()),	//target
+	                                    this.camera.frame.y() );								//up
 
 	    this.projection = GFX.Matrix.perspective(this.camera.fovy, this.width/this.height, this.camera.near, this.camera.far);  
 
@@ -1615,7 +1818,15 @@ GFX.Scene.prototype = {
 	    shader.setUniformVec("mvLightPos", v.x, v.y, v.z);
 	},
 
-	/// Draw a Mesh
+	clear: function( ){
+    	GL.clearColor( this.color[0], this.color[1], this.color[2], this.color[3] );
+	    GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
+    },
+
+    viewport: function(){
+    	GL.viewport(0,0, this.width, this.height);	
+    },
+
 	draw: function(mesh){
 
 		var objModel = this.matrix.last().mult( mesh.frame.matrix() );
@@ -1625,60 +1836,24 @@ GFX.Scene.prototype = {
 	    this.shader.setUniformMatrix("model", m.transpose().val);
 	    this.shader.setUniformMatrix("modelView", mv.transpose().val);	    
 	    this.shader.setUniformMatrix3("normalMatrix", mv.mat3().inverse().val );
-    	
-    	if (mesh.useColor){
-    		this.shader.enableAttribute("color");
-			mesh.colorBuffer.bind();
-			this.shader.pointAttribute("color",3);		
-    	} else {
-    	    this.shader.disableAttribute("color");	
-			this.shader.setUniformVec("drawColor", this.drawColor.x, this.drawColor.y, this.drawColor.z);
-    	}
-    	
-    	if (mesh.useNormal){
-    		this.shader.enableAttribute("normal");
-			mesh.normalBuffer.bind();
-			this.shader.pointAttribute("normal",3);		
-    	} else {
-    		this.shader.disableAttribute("normal");
-    	}
+    	this.shader.setUniformVec("drawColor", this.drawColor.x, this.drawColor.y, this.drawColor.z);
 
-    	if (mesh.useUV){
-    		this.shader.enableAttribute("uv");
-			mesh.texBuffer.bind();
-			this.shader.pointAttribute("uv",2);		
-    	} else {
-    		this.shader.disableAttribute("uv");
-    	}
-
-
-
-		this.shader.enableAttribute("position");
-		mesh.vertexBuffer.bind();
-		this.shader.pointAttribute("position",3);		
-
-    	if (mesh.useElements){
-			mesh.indexBuffer.bind();
-			mesh.indexBuffer.drawElements(mesh.mode);
-    	} else {
-			mesh.vertexBuffer.drawArrays(mesh.mode);
-		}
+		mesh.draw(this.shader);
 
 	},
 
-	/// Stop Rendering Scene
 	end: function(){
 		this.shader.unbind();
 	},
 
-	/// Calculate screen pixel coordinates of a world coordinate v
+	/** Calculate screen pixel coordinates of a world coordinate v */
 	project: function(v){
 		var tv = this.modelViewProjection.multVec(v.hom());
 		tv = tv.divide(tv.w);
 		return new GFX.Vector( this.width * (1+tv.x)/2, this.height * (1+tv.y)/2, (1+tv.z)/2);
 	},
 
-	/// Calculate world coordinates of a screen pixel coordinate v
+	/** Calculate world coordinates of a screen pixel coordinate v */
 	unproject: function(v){
 		var vp = new GFX.Vector4( 2*(v.x/this.width)-1, 2*(v.y/this.height)-1, 2*(v.z)-1,1 );
 		var tv = this.modelViewProjection.inverse().multVec(vp);
@@ -1770,7 +1945,7 @@ GFX.App.prototype = {
  					this.mouse.dx = this.mouse.x - this.mouse.lastX;
  					this.mouse.dy = this.mouse.y - this.mouse.lastY;
 
- 					var z = new GFX.Vector(0,0,1);
+ 					var z = this.scene.camera.frame.z();//GFX.Vector.Z;
  					var move = new GFX.Vector(this.mouse.dx / rect.width, this.mouse.dy / rect.height, 0.0);
  					var axis = z.cross(move);
  					var norm = move.norm();
@@ -1807,4 +1982,133 @@ GFX.App.prototype = {
  				break;		
  		}
  	}
+}
+
+/** Pass in format (e.g. DEPTH_COMPONENT16 or STENCIL_INDEX8 or DEPTH_STENCIL) */
+GFX.RenderBuffer = function(format) {
+	this.id;
+	this.width;
+	this.height;
+	this.format = format || GL.DEPTH_COMPONENT16; 
+};
+
+GFX.RenderBuffer.prototype = {
+	constructor: GFX.RenderBuffer,
+
+	init: function(w,h){
+		this.width = w;
+		this.height = h;
+		this.create();
+		this.bind();
+		this.alloc(w,h);	
+		this.unbind();	
+	},
+
+	create: function(){ this.id = GL.createRenderbuffer(); },
+	bind: function(){ GL.bindRenderbuffer(GL.RENDERBUFFER, this.id); },
+	alloc: function(w,h){ GL.renderbufferStorage(GL.RENDERBUFFER, this.format, w,h); },
+	unbind: function(){ GL.bindRenderbuffer(GL.RENDERBUFFER, null); },	
+};
+
+GFX.FrameBuffer = function(){
+	this.id = null;
+};
+
+GFX.FrameBuffer.prototype = {
+	constructor: GFX.FrameBuffer,
+
+	create: function(){
+		this.id = GL.createFramebuffer();
+	},
+
+	bind: function(){
+		GL.bindFramebuffer(GL.FRAMEBUFFER,this.id);
+	},
+
+	unbind: function(){
+		GL.bindFramebuffer(GL.FRAMEBUFFER,null);
+	},
+
+	attachTexture: function(texture, attachment){
+		GL.framebufferTexture2D(GL.FRAMEBUFFER, attachment || GL.COLOR_ATTACHMENT0, GL.TEXTURE_2D, texture.id, 0);
+	},
+
+	attachDepthBuffer: function(renderbuffer){
+		GL.framebufferRenderbuffer(GL.FRAMEBUFFER, GL.DEPTH_ATTACHMENT, GL.RENDERBUFFER, renderbuffer.id);
+	},
+
+	attachStencilBuffer: function(renderbuffer){
+		GL.framebufferRenderbuffer(GL.FRAMEBUFFER, GL.STENCIL_ATTACHMENT, GL.RENDERBUFFER, renderbuffer.id);
+	},
+
+	addDepthBuffer: function(){
+
+	}	
+
+}
+
+GFX.Slab = function(){
+	this.width;
+	this.height;
+	this.shader = new GFX.Shader();
+	this.mesh = new GFX.Mesh();
+}
+
+GFX.Slab.prototype = {
+	constructor: GFX.Slab,
+
+	init: function(){
+		var vert = GFX.Shader.Text.precision + "\nattribute vec3 position;\nattribute vec2 uv;\nvarying vec2 vuv;\nvoid main(){ vuv=uv;\ngl_Position=vec4(position,1.0);}\n";
+		var frag = GFX.Shader.Text.precision + "\nuniform sampler2D texture;\nvarying vec2 vuv;\nvoid main() { gl_FragColor=texture2D(texture, vuv); }\n"
+		this.mesh = GFX.Mesh.MakeRect();
+		this.shader.program(vert,frag);		
+	},
+
+	draw: function(tex){
+		tex.bind();
+		this.shader.bind();
+		this.mesh.draw(this.shader);
+		this.shader.unbind();
+		tex.unbind();
+	}
+}
+
+GFX.Render = function(){
+	this.color = [0,0,0,0];
+	this.fbo = new GFX.FrameBuffer();
+	this.texture = new GFX.Texture();
+	this.rbo = new GFX.RenderBuffer();
+	this.slab = new GFX.Slab();
+}
+
+GFX.Render.prototype = {
+	constructor: GFX.Render,
+
+	init: function(w,h){
+		this.texture.init(w,h);
+		this.rbo.init(w,h);
+		this.slab.init();
+		this.fbo.create();
+		this.fbo.bind();
+			this.fbo.attachTexture(this.texture);
+			this.fbo.attachDepthBuffer(this.rbo);
+		this.fbo.unbind();
+	},
+
+	begin: function(){
+		this.fbo.bind();
+    	GL.clearColor(this.color[0],this.color[1],this.color[2],this.color[3]);
+	    GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
+		GL.viewport(0,0,this.texture.width,this.texture.height)
+	},
+
+	end: function(){
+		this.fbo.unbind();
+	},
+
+	show: function(w,h){
+		GL.viewport(0,0,w,h);		
+		this.slab.draw(this.texture);
+	}
+
 }

@@ -2,10 +2,12 @@
 
 <!--  
 
+BLENDING TWO TEXTURES
+
 author: wolftype 
 license: MIT
 
-   Example use of GFX.js
+   Example use of GFX.js 
 
    An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
 
@@ -22,57 +24,44 @@ license: MIT
 
 
 var app = new GFX.App();
-var meshes = [];
+var mesh;
 var mouseZ;
-var texture = new GFX.Texture();
+var textureA = new GFX.Texture();
+var textureB = new GFX.Texture();
 
 var fm;
 
 app.onInit = function(){
 
-  this.scene.camera.frame.position.set(0,5,5);
-  this.scene.camera.setTarget( new GFX.Vector(0,0,0) );
+  mesh =  GFX.Mesh.MakeRect() ;
 
-  fm = GFX.Mesh.MakeFrame();
-  fm.frame.position.set(0,1,1);
-  fm.frame.setTarget( GFX.Vector.Origin);
+  var imgA = new Image();
+  imgA.onload = function(){ textureA.loadImage(imgA); }; 
+  imgA.src = "../imgs/nasa_cropped.jpg";
 
-  for (var i=0;i<300;++i){
-    var m =  GFX.Mesh.MakeRect() ;
-    m.frame.position.set( -3 + 6*Math.random(), Math.random(), -3+6*Math.random());
-    m.frame.size.set(.3,.3,.3);
-    meshes.push(m);
-  }
+  var imgB = new Image();
+  imgB.onload = function(){ textureB.loadImage(imgB); }; 
+  imgB.src = "../imgs/sword.png";
 
-  var img = new Image();
-  img.onload = function(){ texture.loadImage(img); }; 
-  img.src = "../imgs/nasa_cropped_tiny.png";
 
-  mouseZ = document.getElementById("mouseZ");
-
+  this.scene.shader.setUniformInt("textureA",0);
+  this.scene.shader.setUniformInt("textureB",1);
 }
 
 
 app.onRender = function() {
 
   var scene = this.scene;
-  var mouse = this.mouse;
 
-  var wm = scene.unproject( new GFX.Vector( mouse.x, mouse.y, .9 + mouseZ.value/1000) );
- 
   scene.begin();
 
-    texture.bind();
+     GFX.Texture.Active(0);
+     textureA.bind();
+     GFX.Texture.Active(1);
+     textureB.bind();
 
-    //scene.draw(fm);
+    scene.draw(mesh);
 
-
-    for (var i =0;i<meshes.length;++i){
-      var forward = scene.camera.frame.position.sub(meshes[i].frame.position).unit();
-      var up = scene.camera.frame.y();
-      meshes[i].frame.setForwardUp( forward, up );
-      scene.draw(meshes[i]);
-    }
 
   scene.end();
 }
@@ -115,13 +104,14 @@ app.onRender = function() {
   #endif
 
   uniform float u_time;
-  uniform sampler2D texture; // NEW!!
+  uniform sampler2D textureA; // NEW!!
+  uniform sampler2D textureB; // NEW!!
 
   varying vec3 vcolor;
   varying vec2 vuv;
 
   void main() {
-    gl_FragColor =  texture2D(texture, vuv);
+    gl_FragColor =  (texture2D(textureA, vuv) + texture2D(textureB, vuv))*.5;
   }
 </script>
 
@@ -129,7 +119,6 @@ app.onRender = function() {
 <center>
 <canvas id="gfxcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
 <br>
-<input type="range" id ="mouseZ"> (mouseZ) </input>
 </center>
 </body>
 </html>

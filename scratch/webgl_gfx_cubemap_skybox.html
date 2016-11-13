@@ -1,0 +1,148 @@
+<html>
+
+<!--  
+
+BLENDING TWO TEXTURES
+
+author: wolftype 
+license: MIT
+
+   Example use of GFX.js 
+
+   An ASAP (As-Simple-As-Possible) WebGL Framework For Graphics Experiments
+
+   With Context, Vectors, Matrices, Quaternions, Frames, Scenes and Shaders
+
+--> 
+
+
+<script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx_v02.js"></script>
+
+</script> 
+
+<script type="text/javascript">
+
+
+var app = new GFX.App();
+var mesh;
+var cubemap = new GFX.CubeMap();
+
+
+app.onInit = function(){
+
+
+  mesh =  GFX.Mesh.MakeCube() ;
+
+  var names = [
+    "cubemap_00/shadowpeak_rt.png", //pos x
+    "cubemap_00/shadowpeak_lf.png", //neg x
+    "cubemap_00/shadowpeak_up.png", //pos y
+    "cubemap_00/shadowpeak_dn.png", //neg y        
+    "cubemap_00/shadowpeak_bk.png", //pos Z
+    "cubemap_00/shadowpeak_ft.png", //neg Z
+  ];
+
+  // var names = [
+  //   "test/r.png", //pos x
+  //   "test/l.png", //neg x
+  //   "test/t.png", //pos y
+  //   "test/b.png", //neg y        
+  //   "test/k.png", //pos Z 
+  //   "test/f.png", //neg Z
+  // ];
+
+    cubemap.create();
+    var img = new Array(6);
+    for (var i=0;i<6; i++){
+      img[i] = new Image();
+      var ct = 0;
+      img[i].onload = function(){ 
+        if (ct==5){
+          for (var j = 0;j<6;++j){
+            var flip = (j==2 || j==3) ? true : false;
+            cubemap.loadImage(img[j],j, false);
+          }
+          cubemap.setParameters(); 
+        }
+        ct++;
+      }
+      var name = "../imgs/"+names[i];
+      img[i].src = name;
+      
+   }
+
+   this.scene.camera.frame.position.set(0,0,0);
+   this.scene.camera.frame.orientation.setRotation(.3,1,0,0);
+}
+
+
+app.onRender = function() {
+
+  var scene = this.scene;
+
+  scene.camera.frame.rotateWorldY(.005);
+  scene.begin();
+
+    scene.shader.setUniformInt("cubemap",0);
+    GFX.Texture.Active(0);
+    cubemap.bind();
+
+    scene.draw(mesh);
+
+  scene.end();
+}
+
+</script>
+
+<!-- VERTEX SHADER -->
+<script id="gfxvert" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  attribute vec3 position;      //Position
+  attribute vec3 color;         //Color
+  attribute vec2 uv;
+
+  uniform mat4 model;           //Model Matrix
+  uniform mat4 view;            //View Matrix
+  uniform mat4 projection;      //Projection Matrix
+  uniform vec3 drawColor;
+
+  varying vec3 vcolor;
+  varying vec3 texDir;
+
+  void main() {
+    vcolor = color + drawColor;
+    gl_Position = projection * view * model * vec4(position, 1.0);
+    texDir = normalize(position);
+    gl_PointSize = 10.0;
+  }
+</script>
+
+
+<!-- FRAGMENT SHADER -->
+<script id="gfxfrag" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform samplerCube cubemap;
+
+  varying vec3 vcolor;
+  varying vec3 texDir;  
+
+  void main() {
+    gl_FragColor = textureCube(cubemap, texDir);
+  }
+</script>
+
+<body onload=app.start()>
+<center>
+<canvas id="gfxcanvas" width=640 height=480> No <code> canvas </code> tag support </canvas>
+<br>
+</center>
+</body>
+</html>
