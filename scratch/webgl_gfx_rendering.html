@@ -1,0 +1,190 @@
+<html>
+<script src = "../js/gfx_v02.js"></script>
+<script type="text/javascript">
+
+var app = new GFX.App();
+var render;
+var post;
+var mesh;
+var amtA;
+var amtB;
+
+
+app.onInit = function(){
+  mesh = GFX.Mesh.MakeCylinder();
+  mesh.useColor = false;
+  render = new GFX.Render();
+  render.init(16,16);
+
+  post = new GFX.Render();
+  post.init(64,64);
+
+  //Fragment Shaders
+  var blur = document.getElementById("blur").text
+  var edge = document.getElementById("edge").text
+  var sharpen = document.getElementById("sharpen").text
+
+//  render.slab.shader.program( GFX.Shader.Text.vert, blur);
+//  post.slab.shader.program( GFX.Shader.Text.vert, edge);
+
+  amtA = document.getElementById("amtA");
+  amtB = document.getElementById("amtB");  
+}
+
+app.onRender = function(){
+
+//  render.slab.amt = 1./(100-amtA.value);
+//  post.slab.amt = 1./(100-amtB.value);
+
+  var scene = this.scene;
+  mesh.frame.rotateWorldX(.05);
+  scene.update();
+  render.begin();
+    scene.draw(mesh);
+  render.end();
+
+  render.show(scene.width, scene.height);
+
+  // post.begin();
+  //   render.show(post.width, post.height);
+  // post.end();
+
+  // post.show(scene.width, scene.height);
+
+}
+
+</script>
+
+<script id = "gfxvert" type="text/glsl">
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  attribute vec3 position;      //Position
+  attribute vec3 color;         //Color
+  attribute vec3 normal;        //Normal
+  attribute vec2 uv;
+
+  uniform vec3 drawColor;
+  uniform mat4 model;           //Model Matrix
+  uniform mat4 view;            //View Matrix
+  uniform mat4 projection;      //Projection Matrix
+
+  varying vec3 vcolor;
+  varying vec2 vuv;
+  varying vec3 vnormal;
+
+  void main() {
+    vcolor = drawColor + color;
+    vuv = uv;
+    vnormal = normal;
+    gl_Position = projection * view * model * vec4(position, 1.0);
+    gl_PointSize = 10.0;
+  }
+</script>
+
+<script id = "gfxfrag" type="text/glsl">
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform float u_time;
+
+  varying vec3 vcolor;
+
+  void main() {
+    gl_FragColor = vec4(vcolor,1.0);
+  }
+</script>
+
+<script id = "blur" type="glsl">
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform sampler2D texture;
+  varying vec2 vuv;
+  uniform float u_amt;
+
+  void main() { 
+  vec2 uv[9];
+  uv[0] = vec2(-u_amt, u_amt); uv[1] = vec2(0.,u_amt);  uv[2] = vec2(u_amt,u_amt);
+  uv[3] = vec2(-u_amt, 0.);    uv[4] = vec2(0.,0.);      uv[5] = vec2(u_amt,0.);
+
+  float kernel[9];
+  kernel[0] = 1.; kernel[1] = 2.; kernel[2] = 1.;
+  kernel[3] = 2.; kernel[4] = 4.; kernel[5] = 2.;
+  kernel[6] = 1.; kernel[7] = 2.; kernel[8] = 1.;
+
+  vec3 col = vec3(0.);
+
+  for(int i = 0; i < 9; i++) col += texture2D(texture, vuv + uv[i]).rgb * kernel[i]/16.; 
+
+   gl_FragColor=vec4(col, 1.0);
+}
+</script>
+
+<script id = "sharpen" type="glsl">
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform sampler2D texture;
+  varying vec2 vuv;
+  uniform float u_amt;
+
+  void main() { 
+  vec2 uv[9];
+  uv[0] = vec2(-u_amt, u_amt); uv[1] = vec2(0.,u_amt);  uv[2] = vec2(u_amt,u_amt);
+  uv[3] = vec2(-u_amt, 0.);     uv[4] = vec2(0.,0.);      uv[5] = vec2(u_amt,0.);
+
+  float kernel[9];
+  kernel[0] = -1.; kernel[1] = -1.; kernel[2] = -1.;
+  kernel[3] = -1.; kernel[4] = 9.; kernel[5] = -1.;
+  kernel[6] = -1.; kernel[7] = -1.; kernel[8] = -1.;
+
+  vec3 col = vec3(0.);
+
+  for(int i = 0; i < 9; i++) col += texture2D(texture, vuv + uv[i]).rgb * (kernel[i]); 
+
+   gl_FragColor=vec4(col, 1.0);
+}
+</script>
+
+<script id = "edge" type="glsl">
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform sampler2D texture;
+  varying vec2 vuv;
+  uniform float u_amt;
+
+  void main() { 
+  vec2 uv[9];
+  uv[0] = vec2(-u_amt, u_amt); uv[1] = vec2(0.,u_amt);  uv[2] = vec2(u_amt,u_amt);
+  uv[3] = vec2(-u_amt, 0.);     uv[4] = vec2(0.,0.);      uv[5] = vec2(u_amt,0.);
+
+  float kernel[9];
+  kernel[0] = 1.; kernel[1] = 1.; kernel[2] = 1.;
+  kernel[3] = 1.; kernel[4] = -8.; kernel[5] = 1.;
+  kernel[6] = 1.; kernel[7] = 1.; kernel[8] = 1.;
+
+  vec3 col = vec3(0.);
+
+  for(int i = 0; i < 9; i++) col += texture2D(texture, vuv + uv[i]).rgb * (kernel[i]); 
+
+   gl_FragColor=vec4(col, 1.0);
+}
+</script>
+
+<body onload = "app.start()">
+<center>
+<canvas id = "gfxcanvas" width = "512" height = "512"></canvas>
+</br>
+<input type="range" id ="amtA"> (amtA) </input>
+</br>
+<input type="range" id ="amtB"> (amtB) </input>
+</center>
+</body>
+</html>

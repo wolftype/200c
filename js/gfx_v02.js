@@ -1102,6 +1102,8 @@ GFX.Shader.prototype = {
 
 GFX.Shader.Text = function(){}
 GFX.Shader.Text.precision = "#ifdef GL_ES \n precision lowp float; \n #endif\n";
+GFX.Shader.Text.vert = GFX.Shader.Text.precision + "\nattribute vec3 position;\nattribute vec2 uv;\nvarying vec2 vuv;\nvoid main(){ vuv=uv;\ngl_Position=vec4(position,1.0);}\n";
+GFX.Shader.Text.frag = GFX.Shader.Text.precision + "\nuniform sampler2D texture;\nuniform float u_amt;\nvarying vec2 vuv;\nvoid main() { gl_FragColor=texture2D(texture, vuv) * u_amt; }\n"
 
 
 GFX.Texture = function(){
@@ -2011,6 +2013,7 @@ GFX.RenderBuffer.prototype = {
 };
 
 GFX.FrameBuffer = function(){
+	this.color = [0,0,0,0];
 	this.id = null;
 };
 
@@ -2023,6 +2026,11 @@ GFX.FrameBuffer.prototype = {
 
 	bind: function(){
 		GL.bindFramebuffer(GL.FRAMEBUFFER,this.id);
+	},
+
+	clear: function(){
+    	GL.clearColor(this.color[0],this.color[1],this.color[2],this.color[3]);
+	    GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	},
 
 	unbind: function(){
@@ -2039,17 +2047,14 @@ GFX.FrameBuffer.prototype = {
 
 	attachStencilBuffer: function(renderbuffer){
 		GL.framebufferRenderbuffer(GL.FRAMEBUFFER, GL.STENCIL_ATTACHMENT, GL.RENDERBUFFER, renderbuffer.id);
-	},
-
-	addDepthBuffer: function(){
-
-	}	
+	}
 
 }
 
 GFX.Slab = function(){
 	this.width;
 	this.height;
+	this.amt = 1.0;
 	this.shader = new GFX.Shader();
 	this.mesh = new GFX.Mesh();
 }
@@ -2058,48 +2063,49 @@ GFX.Slab.prototype = {
 	constructor: GFX.Slab,
 
 	init: function(){
-		var vert = GFX.Shader.Text.precision + "\nattribute vec3 position;\nattribute vec2 uv;\nvarying vec2 vuv;\nvoid main(){ vuv=uv;\ngl_Position=vec4(position,1.0);}\n";
-		var frag = GFX.Shader.Text.precision + "\nuniform sampler2D texture;\nvarying vec2 vuv;\nvoid main() { gl_FragColor=texture2D(texture, vuv); }\n"
 		this.mesh = GFX.Mesh.MakeRect();
-		this.shader.program(vert,frag);		
+		this.shader.program(GFX.Shader.Text.vert, GFX.Shader.Text.frag);		
 	},
 
 	draw: function(tex){
 		tex.bind();
-		this.shader.bind();
-		this.mesh.draw(this.shader);
-		this.shader.unbind();
+			this.shader.bind();
+				this.shader.setUniformFloat("u_amt", this.amt);	
+				this.mesh.draw(this.shader);
+			this.shader.unbind();
 		tex.unbind();
 	}
 }
 
 GFX.Render = function(){
-	this.color = [0,0,0,0];
-	this.fbo = new GFX.FrameBuffer();
-	this.texture = new GFX.Texture();
-	this.rbo = new GFX.RenderBuffer();
-	this.slab = new GFX.Slab();
+	this.width;
+	this.height;
+	this.fbo = new GFX.FrameBuffer();	// A Pipeline redirect
+	this.texture = new GFX.Texture();  	// A Read/Write RGBA texture
+	this.rbo = new GFX.RenderBuffer();  // A Write-only Renderbuffer
+	this.slab = new GFX.Slab(); 		// A Rectangle and shader with sampler2D
 }
 
 GFX.Render.prototype = {
 	constructor: GFX.Render,
 
 	init: function(w,h){
-		this.texture.init(w,h);
-		this.rbo.init(w,h);
-		this.slab.init();
-		this.fbo.create();
+		this.width = w;
+		this.height = h;
+		this.texture.init(w,h); 
+		this.rbo.init(w,h);		
+		this.slab.init();		
+		this.fbo.create();		
 		this.fbo.bind();
-			this.fbo.attachTexture(this.texture);
-			this.fbo.attachDepthBuffer(this.rbo);
+			this.fbo.attachTexture(this.texture); // Color Attachment
+			this.fbo.attachDepthBuffer(this.rbo); // Depth Attachment
 		this.fbo.unbind();
 	},
 
 	begin: function(){
 		this.fbo.bind();
-    	GL.clearColor(this.color[0],this.color[1],this.color[2],this.color[3]);
-	    GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-		GL.viewport(0,0,this.texture.width,this.texture.height)
+		this.fbo.clear();
+		GL.viewport(0,0,this.width,this.height);
 	},
 
 	end: function(){

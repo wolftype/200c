@@ -1,0 +1,179 @@
+<html>
+<script src = "../js/gfx_v02.js"></script>
+<script type="text/javascript">
+
+var app = new GFX.App();
+var currentRender;
+var previousRender;
+var mesh;
+var alpha;
+var offset;
+var bShader;
+var bValue = false;
+var normalShader = new GFX.Shader();
+var edgeShader = new GFX.Shader();
+
+app.onInit = function(){
+  
+  mesh = GFX.Mesh.MakeCylinder();
+  mesh.useColor = false;
+  
+  currentRender = new GFX.Render();
+  previousRender = new GFX.Render();
+  
+  currentRender.init(512,512);
+  previousRender.init(32,32);
+
+  normalShader.program( GFX.Shader.Text.vert, GFX.Shader.Text.frag );
+  edgeShader.program( GFX.Shader.Text.vert, document.getElementById("edge").text );
+
+  this.scene.lightPos.set(2,2,2);
+  alpha = document.getElementById("alpha");
+  offset = document.getElementById("offset");
+  bShader = document.getElementById("bShader");
+  bShader.onclick = function(){ bValue = !bValue; }
+}
+
+app.onRender = function(){
+
+  var scene = this.scene;
+  scene.update();
+
+  mesh.frame.rotateWorldX(.05);
+
+  previousRender.slab.amt = alpha.value / 100;
+  
+  currentRender.slab.shader = bValue ? edgeShader : normalShader;
+  currentRender.slab.amt = bValue ? 1.0/offset.value : 1.0;
+
+  //Bind and Clear Buffer, set viewport dimensions
+  currentRender.begin();
+    // draw previous frame with depth test disabled
+    GL.disable(GL.DEPTH_TEST);
+    previousRender.show(currentRender.width, currentRender.height);
+    // draw new frame on top with depth test enabled
+    GL.enable(GL.DEPTH_TEST);
+    scene.shader.bind();
+    scene.draw(mesh);
+  currentRender.end();
+
+  // draw that mix to screen . . .
+  currentRender.show(scene.width, scene.height);
+
+  // . . . and save a copy next iteration
+  previousRender.fbo.bind();
+    currentRender.show(previousRender.width, previousRender.height);
+  previousRender.fbo.unbind();
+
+
+}
+
+</script>
+
+
+
+<!-- VERTEX SHADER -->
+<script id="gfxvert" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  attribute vec3 position;      //Position
+  attribute vec3 normal;        //Normal
+  attribute vec3 color;         //Color
+
+  uniform vec3 drawColor;       //Base color
+  uniform mat4 modelView;       //ModelView Matrix
+  uniform mat4 projection;      //Projection Matrix
+  uniform mat3 normalMatrix;    //Normal Matrix
+
+  varying vec3 vcolor;
+  varying vec3 vnormal;
+  varying vec3 vpos;
+
+  void main() {
+
+    vec4 mvPos = modelView * vec4(position, 1.0);       //eye space position
+
+    vpos = mvPos.xyz;
+    vnormal = normalMatrix * normal;                    //eye space normal direction
+
+    vcolor = drawColor + vec3(abs(color.x), abs(color.y), abs(color.z));
+    gl_Position = projection * mvPos;
+    gl_PointSize = 10.0;
+  }
+</script>
+
+
+<!-- FRAGMENT SHADER -->
+<script id="gfxfrag" type="text/glsl">
+
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform float u_time;
+  uniform vec3 mvLightPos;       //Light Position in Eye Space
+
+  varying vec3 vcolor;
+  varying vec3 vnormal;
+  varying vec3 vpos;
+
+  float diffuse(vec3 lightdir, vec3 norm){
+   return max( dot( norm, -lightdir) , 0.0);
+  }
+
+  float specular(vec3 vdir, vec3 lightdir, vec3 norm){
+   return pow( max( dot( reflect( lightdir, norm ), -vdir), 0.0), 16.);
+  }
+
+  void main() {
+    vec3 mvNormal = normalize(vnormal);
+    vec3 mvDir = normalize(vpos);
+
+    vec3 mvLightDir = normalize(vpos - mvLightPos);   //incoming light direction
+    vec3 finalColor = vcolor * ( .3 + diffuse(mvLightDir, mvNormal)  );
+    finalColor += vec3(1.,1.,1.) * specular(mvDir, mvLightDir, mvNormal);
+    gl_FragColor = vec4(finalColor,1.0);
+  }
+</script>
+
+<script id = "edge" type="glsl">
+  #ifdef GL_ES
+  precision lowp float;
+  #endif
+
+  uniform sampler2D texture;
+  varying vec2 vuv;
+  uniform float u_amt;
+
+  void main() { 
+  vec2 uv[9];
+  uv[0] = vec2(-u_amt, u_amt); uv[1] = vec2(0.,u_amt);  uv[2] = vec2(u_amt,u_amt);
+  uv[3] = vec2(-u_amt, 0.);     uv[4] = vec2(0.,0.);      uv[5] = vec2(u_amt,0.);
+
+  float kernel[9];
+  kernel[0] = 1.; kernel[1] = 1.; kernel[2] = 1.;
+  kernel[3] = 1.; kernel[4] = -8.; kernel[5] = 1.;
+  kernel[6] = 1.; kernel[7] = 1.; kernel[8] = 1.;
+
+  vec3 col = vec3(0.);
+
+  for(int i = 0; i < 9; i++) col += texture2D(texture, vuv + uv[i]).rgb * (kernel[i]); 
+
+   gl_FragColor=vec4(col, 1.0);
+}
+</script>
+
+<body onload = "app.start()">
+<center>
+<canvas id = "gfxcanvas" width = "512" height = "512"></canvas>
+</br>
+<input type="range" id ="alpha"> (alpha) </input>
+</br>
+<input type="range" id ="offset"> (offset) </input>
+<button type="button" id ="bShader"> (bShader) </button>
+</center>
+</body>
+</html>
