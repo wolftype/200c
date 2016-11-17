@@ -4,7 +4,7 @@ category: schedule
 ---
 
 Framebuffers  
-[Slides from class]()
+[Slides from class]({{ site.baseurl}}/scratch/slides_05.html)
 
 Reading: [Framebuffers](http://learnopengl.com/#!Advanced-OpenGL/Framebuffers)
 Reading: [Kernels](http://setosa.io/ev/image-kernels/)
