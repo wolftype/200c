@@ -87,7 +87,10 @@ app.onRender = function() {
     GFX.Texture.Active(0);
     cubemap.bind();
 
+    GL.disable(GL.DEPTH_TEST);
     scene.draw(mesh);
+    GL.enable(GL.DEPTH_TEST);
+    scene.draw()
 
   scene.end();
 }

@@ -14,18 +14,19 @@ app.onInit = function(){
   mesh = GFX.Mesh.MakeCylinder();
   mesh.useColor = false;
   render = new GFX.Render();
-  render.init(64,64);
+  render.depthStencilAsTexture=true;
+  render.init(512,512);
 
   post = new GFX.Render();
-  post.init(512,512);
+  post.init(64,64);
 
   //Fragment Shaders
   var blur = document.getElementById("blur").text
   var edge = document.getElementById("edge").text
   var sharpen = document.getElementById("sharpen").text
 
-  render.slab.shader.program( GFX.Shader.Text.vert, blur);
-  post.slab.shader.program( GFX.Shader.Text.vert, sharpen);
+//  render.slab.shader.program( GFX.Shader.Text.vert, blur);
+//  post.slab.shader.program( GFX.Shader.Text.vert, edge);
 
   amtA = document.getElementById("amtA");
   amtB = document.getElementById("amtB");  
@@ -33,23 +34,27 @@ app.onInit = function(){
 
 app.onRender = function(){
 
-  render.slab.amt = 1./(100-amtA.value);
-  post.slab.amt = 1./(100-amtB.value);
+//  render.slab.amt = 1./(100-amtA.value);
+//  post.slab.amt = 1./(100-amtB.value);
 
   var scene = this.scene;
-  mesh.frame.rotateWorldX(.05);
+//  mesh.frame.rotateWorldX(.01);
   scene.update();
   render.begin();
-    scene.draw(mesh);
+    for (var i=0;i<10;++i){
+      scene.matrix.translate(0,0,-2);
+      scene.draw(mesh);
+    }
   render.end();
 
   render.draw(0,0,scene.width/2, scene.height/2);
+  render.drawDepth(scene.width/2,0,scene.width/2, scene.height/2);
 
-   post.begin();
-     render.draw(0,0,post.width, post.height);
-   post.end();
+  // post.begin();
+  //   render.show(post.width, post.height);
+  // post.end();
 
-  post.draw(scene.width/2,0,scene.width/2, scene.height/2);
+  // post.show(scene.width, scene.height);
 
 }
 
@@ -110,7 +115,6 @@ app.onRender = function(){
   vec2 uv[9];
   uv[0] = vec2(-u_amt, u_amt); uv[1] = vec2(0.,u_amt);  uv[2] = vec2(u_amt,u_amt);
   uv[3] = vec2(-u_amt, 0.);    uv[4] = vec2(0.,0.);      uv[5] = vec2(u_amt,0.);
-  uv[6] = vec2(-u_amt, -u_amt);uv[7] = vec2(0.,-u_amt); uv[8] = vec2(u_amt,-u_amt);
 
   float kernel[9];
   kernel[0] = 1.; kernel[1] = 2.; kernel[2] = 1.;
@@ -138,7 +142,6 @@ app.onRender = function(){
   vec2 uv[9];
   uv[0] = vec2(-u_amt, u_amt); uv[1] = vec2(0.,u_amt);  uv[2] = vec2(u_amt,u_amt);
   uv[3] = vec2(-u_amt, 0.);     uv[4] = vec2(0.,0.);      uv[5] = vec2(u_amt,0.);
-  uv[6] = vec2(-u_amt, -u_amt);uv[7] = vec2(0.,-u_amt); uv[8] = vec2(u_amt,-u_amt);
 
   float kernel[9];
   kernel[0] = -1.; kernel[1] = -1.; kernel[2] = -1.;
@@ -165,8 +168,7 @@ app.onRender = function(){
   void main() { 
   vec2 uv[9];
   uv[0] = vec2(-u_amt, u_amt); uv[1] = vec2(0.,u_amt);  uv[2] = vec2(u_amt,u_amt);
-  uv[3] = vec2(-u_amt, 0.);    uv[4] = vec2(0.,0.);     uv[5] = vec2(u_amt,0.);
-  uv[6] = vec2(-u_amt, -u_amt);uv[7] = vec2(0.,-u_amt); uv[8] = vec2(u_amt,-u_amt);
+  uv[3] = vec2(-u_amt, 0.);     uv[4] = vec2(0.,0.);      uv[5] = vec2(u_amt,0.);
 
   float kernel[9];
   kernel[0] = 1.; kernel[1] = 1.; kernel[2] = 1.;

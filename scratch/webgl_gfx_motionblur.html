@@ -50,7 +50,7 @@ app.onRender = function(){
   currentRender.begin();
     // draw previous frame with depth test disabled
     GL.disable(GL.DEPTH_TEST);
-    previousRender.show(currentRender.width, currentRender.height);
+    previousRender.draw(0,0,currentRender.width, currentRender.height);
     // draw new frame on top with depth test enabled
     GL.enable(GL.DEPTH_TEST);
     scene.shader.bind();
@@ -58,11 +58,11 @@ app.onRender = function(){
   currentRender.end();
 
   // draw that mix to screen . . .
-  currentRender.show(scene.width, scene.height);
+  currentRender.draw(0,0,scene.width, scene.height);
 
   // . . . and save a copy next iteration
   previousRender.fbo.bind();
-    currentRender.show(previousRender.width, previousRender.height);
+    currentRender.draw(0,0,previousRender.width, previousRender.height);
   previousRender.fbo.unbind();
 
 

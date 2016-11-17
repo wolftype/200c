@@ -70,6 +70,8 @@ GFX.InitContext = function( canvas ){
 	    return
 	}
 	
+	console.log( "Available Extensions", GL.getSupportedExtensions() );
+
     GL.enable(GL.DEPTH_TEST);
     GL.depthFunc(GL.LEQUAL);
 
@@ -1110,6 +1112,8 @@ GFX.Texture = function(){
 	this.id;
 	this.width;
 	this.height;
+	this.format = GL.RGBA;
+	this.type = GL.UNSIGNED_BYTE;
 }
 
 GFX.Texture.prototype = {
@@ -1137,7 +1141,8 @@ GFX.Texture.prototype = {
 	alloc: function(w,h){
 		this.width = w;
 		this.height = h;
-		GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, w, h, 0, GL.RGBA, GL.UNSIGNED_BYTE, null);
+		//target, level, iformat,width,height,border,format,type, data
+		GL.texImage2D(GL.TEXTURE_2D, 0, this.format, w, h, 0, this.format, this.type, null);
 		this.setParameters();
 	}, 
 
@@ -2080,8 +2085,10 @@ GFX.Slab.prototype = {
 GFX.Render = function(){
 	this.width;
 	this.height;
+	this.depthStencilAsTexture = false;
 	this.fbo = new GFX.FrameBuffer();	// A Pipeline redirect
-	this.texture = new GFX.Texture();  	// A Read/Write RGBA texture
+	this.color = new GFX.Texture();  	// A Read/Write RGBA texture
+	this.depth = new GFX.Texture();		// A Read/Write Depth texture
 	this.rbo = new GFX.RenderBuffer();  // A Write-only Renderbuffer
 	this.slab = new GFX.Slab(); 		// A Rectangle and shader with sampler2D
 }
@@ -2092,13 +2099,25 @@ GFX.Render.prototype = {
 	init: function(w,h){
 		this.width = w;
 		this.height = h;
-		this.texture.init(w,h); 
+		this.color.init(w,h); 
 		this.rbo.init(w,h);		
 		this.slab.init();		
 		this.fbo.create();		
 		this.fbo.bind();
-			this.fbo.attachTexture(this.texture); // Color Attachment
-			this.fbo.attachDepthBuffer(this.rbo); // Depth Attachment
+			this.fbo.attachTexture(this.color, GL.COLOR_ATTACHMENT0);
+			if (this.depthStencilAsTexture){
+				var ext = GL.getExtension( "WEBGL_depth_texture" );
+				if (!ext) {
+					console.log("No webgl depth texture extension");
+				}
+				this.depth.type = ext.UNSIGNED_INT_24_8_WEBGL;//GL.UNSIGNED_INT;//GL.UNSIGNED_SHORT;
+				this.depth.format = GL.DEPTH_STENCIL;//GL.DEPTH_COMPONENT;
+				this.depth.init(w,h); 
+				//this.fbo.attachTexture(this.depth, GL.DEPTH_ATTACHMENT);
+				this.fbo.attachTexture(this.depth, GL.DEPTH_STENCIL_ATTACHMENT);				
+			} else {
+				this.fbo.attachDepthBuffer(this.rbo);
+			}
 		this.fbo.unbind();
 	},
 
@@ -2112,9 +2131,14 @@ GFX.Render.prototype = {
 		this.fbo.unbind();
 	},
 
-	show: function(w,h){
-		GL.viewport(0,0,w,h);		
-		this.slab.draw(this.texture);
+	draw: function(l,t,w,h){
+		GL.viewport(l,t,w,h);		
+		this.slab.draw(this.color);
+	},
+
+	drawDepth: function(l,t,w,h){
+		GL.viewport(l,t,w,h);		
+		this.slab.draw(this.depth);
 	}
 
 }
