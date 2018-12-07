@@ -28,7 +28,7 @@ Here is what you will be filling out:
 
 	{% highlight html %}
       <html>
-      <script src = "http://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
+      <script src = "https://cdn.jsdelivr.net/gh/wolftype/200c@gh-pages/js/gfx.js"></script>
       
       var app = new GFX.App();
 

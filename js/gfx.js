@@ -11,7 +11,7 @@ license: MIT
    How to use: 
 
       <html>
-      <script src = "https://rawgit.com/wolftype/200c/gh-pages/js/gfx.js"></script>
+      <script src = "https://cdn.jsdelivr.net/gh/wolftype/200c@gh-pages/js/gfx.js"></script>
       
       var app = new GFX.App();
 
